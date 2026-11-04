@@ -214,6 +214,11 @@
   .plist b span{color:var(--blue);font-style:italic;font-weight:900;}
   .plist small{display:block;color:var(--muted);font-weight:500;font-size:13.5px;margin-top:4px;line-height:1.5;}
   .plist em{display:inline-block;font-style:normal;font-weight:700;font-size:12.5px;background:#eaf2ff;color:var(--navy);border-radius:8px;padding:3px 9px;margin-top:8px;}
+
+  .rq-lines{list-style:none;margin:6px 0 0;padding:0;font-size:14px;font-weight:600;}
+  .rq-lines li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid rgba(255,255,255,.16);}
+  .rq-lines li span:last-child{white-space:nowrap;color:#cfdaf0;}
+  .rq-lines:empty{display:none;}
 </style>
 </head>
 <body>
@@ -242,6 +247,7 @@
     <a class="brand" href="#top"><img src="data:image/webp;base64,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" alt="Phonetek" width="160" height="107" style="height:36px;width:auto;"></a>
     <ul class="nav-links" id="navLinks">
       <li><a href="#services">Services</a></li>
+      <li><a href="#devis">Devis réparation</a></li>
       <li><a href="#rachat">Estimer mon rachat</a></li>
       <li><a href="#protections">Protections</a></li>
       <li><a href="#avis">Avis</a></li>
@@ -332,6 +338,49 @@
 
 
 
+
+  <section id="devis" style="padding-top:0;">
+    <div class="wrap">
+      <div class="banner">Devis gratuit de réparation</div>
+      <p class="lead">Choisissez votre iPhone et la réparation : le prix s’affiche tout de suite. Pour tout autre cas ou un autre modèle, le devis est gratuit en magasin.</p>
+      <div class="rc">
+        <div class="rc-body">
+          <div>
+            <div class="rc-step">
+              <h3 aria-level="2"><b>1</b>Votre appareil</h3>
+              <label class="rc-lab" for="rqModel">Modèle</label><select class="rc-sel" id="rqModel"></select>
+            </div>
+            <div class="rc-step">
+              <h3 aria-level="2"><b>2</b>La réparation</h3>
+              <span class="rc-lab" id="rqRepLab">Une ou plusieurs réparations</span>
+              <div class="rc-opts" role="group" aria-labelledby="rqRepLab">
+                <label class="rc-opt"><input type="checkbox" name="rqRep" value="screen"><span>Écran<small>Remplacement</small></span></label><label class="rc-opt"><input type="checkbox" name="rqRep" value="battery"><span>Batterie<small>Remplacement</small></span></label><label class="rc-opt"><input type="checkbox" name="rqRep" value="back"><span>Vitre arrière<small>Remplacement</small></span></label><label class="rc-opt"><input type="checkbox" name="rqRep" value="other"><span>Autre réparation<small>Charge, caméra, son…</small></span></label>
+              </div>
+              <div class="rc-grp" id="rqGamme" hidden style="margin-top:18px;">
+                <span class="rc-lab" id="rqGLab">Gamme d’écran</span>
+                <div class="rc-opts" role="radiogroup" aria-labelledby="rqGLab" style="grid-template-columns:repeat(3,1fr);">
+                  <label class="rc-opt"><input type="radio" name="rqG" value="eco" checked><span>Éco<small id="rqGEco"></small></span></label>
+                  <label class="rc-opt" id="rqGPerfL"><input type="radio" name="rqG" value="perf"><span>Performance<small id="rqGPerf"></small></span></label>
+                  <label class="rc-opt" id="rqGOrigL"><input type="radio" name="rqG" value="orig"><span>Original<small>Sur devis</small></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rc-res" aria-live="polite">
+            <small class="k">Devis estimatif gratuit</small>
+            <div class="rc-price empty" id="rqPrice">Choisissez votre modèle et la réparation.</div>
+            <div class="rc-range" id="rqRange"></div>
+            <ul class="rq-lines" id="rqLines"></ul>
+            <div class="rc-sum" id="rqSum" hidden></div>
+            <a class="btn btn-blue" href="tel:+33774056200"><svg class="ic" width="18" height="18"><use href="#i-phone"/></svg>Appeler pour mon devis</a>
+            <a class="btn btn-line" href="#contact"><svg class="ic" width="18" height="18"><use href="#i-pin"/></svg>Passer au magasin</a>
+            <p class="rc-note" id="rqNote"></p>
+          </div>
+        </div>
+        <div class="rc-foot">Prix indicatifs en euros, confirmés en magasin après un contrôle de l’appareil. Autres modèles et Service Pack : sur devis.</div>
+      </div>
+    </div>
+  </section>
   <section id="garantie" style="padding-top:0;">
     <div class="wrap">
       <div class="banner">Fiables et garantis</div>
@@ -549,6 +598,50 @@
     selC.addEventListener('change',update);
     document.querySelectorAll('.rc input[type=radio]').forEach(function(r){ r.addEventListener('change',update); });
     fillModels();
+  })();
+
+
+  /* ===== Devis gratuit de réparation (tarifs de la boutique, iPhone) ===== */
+  /* [modèle, écran Éco, écran Performance, batterie, vitre arrière] ; null = non proposé / sur devis */
+  var RQ = [["iPhone 17 Pro Max",150,250,null,150],["iPhone 17 Pro",145,230,null,145],["iPhone 17",140,199,null,140],["iPhone 16 Pro Max",120,150,109.99,120],["iPhone 16 Pro",115,145,104.99,115],["iPhone 16 Plus",115,145,104.99,115],["iPhone 16",110,140,99.99,110],["iPhone 15 Pro Max",109,140,99.99,109],["iPhone 15 Pro",104,135,94.99,104],["iPhone 15 Plus",104,135,94.99,104],["iPhone 15",99,130,89.99,99],["iPhone 14 Pro Max",100,130,89.99,100],["iPhone 14 Pro",95,125,84.99,95],["iPhone 14 Plus",95,125,84.99,95],["iPhone 14",90,120,79.99,90],["iPhone 13 Pro Max",90,120,79.99,90],["iPhone 13 Pro",85,115,74.99,85],["iPhone 13 mini",85,115,74.99,85],["iPhone 13",80,110,69.99,80],["iPhone 12 Pro Max",80,110,69.99,80],["iPhone 12 Pro",75,105,64.99,75],["iPhone 12 mini",75,105,64.99,75],["iPhone 12",70,100,59.99,70],["iPhone 11 Pro Max",70,null,59.99,70],["iPhone 11 Pro",65,null,54.99,65],["iPhone 11",60,null,49.99,60],["iPhone X",55,null,44.99,55],["iPhone SE 2022 (SE 3)",65,null,null,65],["iPhone SE 2020 (SE 2)",45,null,null,45],["iPhone 8 Plus",44,null,34.99,44],["iPhone 8",39,null,29.99,39],["iPhone 7 Plus",34,null,34.99,null],["iPhone 7",29,null,29.99,null]];
+  (function(){
+    var sel=document.getElementById('rqModel'), G=document.getElementById('rqGamme');
+    var priceEl=document.getElementById('rqPrice'), rangeEl=document.getElementById('rqRange'), lines=document.getElementById('rqLines'), sumEl=document.getElementById('rqSum'), noteEl=document.getElementById('rqNote');
+    function opt(v,t){ var o=document.createElement('option'); o.value=v; o.textContent=t; return o; }
+    sel.appendChild(opt('','Choisir un iPhone…'));
+    RQ.forEach(function(m,i){ sel.appendChild(opt(String(i),m[0])); });
+    sel.appendChild(opt('x','Autre modèle ou autre marque'));
+    function eur(n){ return (Math.round(n*100)/100).toFixed(2).replace('.',',').replace(',00','')+' €'; }
+    function checked(v){ return document.querySelector('input[name="rqRep"][value="'+v+'"]').checked; }
+    function gamme(){ return document.querySelector('input[name="rqG"]:checked').value; }
+    function update(){
+      var m=(sel.value===''||sel.value==='x')?null:RQ[parseInt(sel.value,10)];
+      var any=sel.value!=='' && (checked('screen')||checked('battery')||checked('back')||checked('other'));
+      var hasGamme=!!(m&&checked('screen')&&m[2]!==null);
+      G.hidden=!hasGamme;
+      document.getElementById('rqGPerfL').hidden=document.getElementById('rqGOrigL').hidden=!hasGamme;
+      if(m){ document.getElementById('rqGEco').textContent=eur(m[1])+' · garantie 6 mois'; if(m[2]!==null) document.getElementById('rqGPerf').textContent=eur(m[2])+' · garantie 10 ans'; }
+      if(!hasGamme) document.querySelector('input[name="rqG"][value="eco"]').checked=true;
+      lines.innerHTML=''; sumEl.hidden=true; rangeEl.textContent=''; var notes=[];
+      if(!any){ priceEl.className='rc-price empty'; priceEl.textContent=sel.value===''?'Choisissez votre modèle et la réparation.':'Choisissez une ou plusieurs réparations.'; noteEl.textContent=''; return; }
+      var total=0, devis=false, parts=[];
+      function add(label,val){ var li=document.createElement('li'); li.innerHTML='<span></span><span></span>'; li.firstChild.textContent=label; if(val===null){ devis=true; li.lastChild.textContent='Sur devis'; } else { total+=val; li.lastChild.textContent=eur(val); } lines.appendChild(li); parts.push(label); }
+      if(checked('screen')){
+        if(!m) add('Écran',null);
+        else if(m[2]===null){ add('Écran',m[1]); notes.push('Écran : tarif unique pour ce modèle, pose comprise.'); }
+        else { var g=gamme(); if(g==='eco'){ add('Écran Éco',m[1]); notes.push('Écran Éco : pose comprise, garantie 6 mois.'); } else if(g==='perf'){ add('Écran Performance',m[2]); notes.push('Écran Performance : pose comprise, garantie 10 ans.'); } else add('Écran Original',null); }
+      }
+      if(checked('battery')) add('Batterie',m?m[3]:null);
+      if(checked('back')){ add('Vitre arrière',m?m[4]:null); notes.push('Vitre arrière seule : sous réserve de réparabilité (châssis en bon état, validation par notre technicien). Sinon, remplacement complet du châssis arrière, sur devis.'); }
+      if(checked('other')) add('Autre réparation',null);
+      if(total>0){ priceEl.className='rc-price'; priceEl.textContent=eur(total); rangeEl.textContent=devis?'+ postes sur devis, voir le détail':'Total estimé, devis gratuit'; }
+      else { priceEl.className='rc-price'; priceEl.textContent='Sur devis'; rangeEl.textContent='Devis gratuit en magasin'; }
+      var nm=m?m[0]:(sel.value==='x'?'Autre modèle':''); sumEl.hidden=false; sumEl.textContent=nm+' · '+parts.join(', ')+(total>0?' · '+eur(total)+(devis?' + devis':''):' · sur devis');
+      noteEl.textContent=notes.join(' ');
+    }
+    sel.addEventListener('change',update);
+    document.querySelectorAll('input[name="rqRep"],input[name="rqG"]').forEach(function(i){ i.addEventListener('change',update); });
+    update();
   })();
 
   /* ===== Pages légales, consentement cookies ===== */
