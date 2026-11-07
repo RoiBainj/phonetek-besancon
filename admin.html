@@ -52,7 +52,20 @@ table{width:100%;border-collapse:collapse;background:var(--card);border:1px soli
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:top}
 th{color:var(--mut);background:#f8fafd}
 .sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}.sw button{width:36px;height:36px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--bd)}.sw button[aria-pressed="true"]{outline:3px solid var(--ac);outline-offset:2px}.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #888}
-.pill.sold{background:#dbe6ff;color:var(--ac)}.item.sold{opacity:.8}
+.pill.sold{background:#dbe6ff;color:var(--ac)}
+.hb{display:grid;grid-template-columns:minmax(80px,150px) 1fr 84px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+.hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb b{text-align:right}
+.ht{background:#eef2f9;border-radius:99px;height:12px;overflow:hidden}
+.hf{height:100%;border-radius:99px;transform-origin:left;animation:gx .6s ease-out}
+@keyframes gx{from{transform:scaleX(0)}}@keyframes gy{from{transform:scaleY(0)}}
+svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-out}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-bottom:6px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.donut{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.donut ul{list-style:none;margin:0;padding:0;font-size:14px;display:grid;gap:4px}
+.donut li i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:8px}
+.nodata{color:var(--mut);padding:18px 0}
+@media (prefers-reduced-motion:reduce){.hf,svg rect.b{animation:none}}.item.sold{opacity:.8}
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
@@ -127,6 +140,12 @@ th{color:var(--mut);background:#f8fafd}
     <select id="cper" style="width:auto"><option value="month">Ce mois-ci</option><option value="30" selected>30 derniers jours</option><option value="365">12 derniers mois</option><option value="0">Tout</option></select></div>
   <div id="cWarn"></div>
   <div class="stats" id="cTot"></div>
+  <div class="card"><h2>Évolution des ventes</h2><div id="chTime"></div></div>
+  <div class="grid2">
+    <div class="card"><h2>Marge par marque</h2><div id="chBrand"></div></div>
+    <div class="card"><h2>Ventes par marque</h2><div id="chDonut"></div></div>
+  </div>
+  <div class="card"><h2>Modèles les plus rentables</h2><div id="chTop"></div></div>
   <h2>Stock en cours</h2>
   <div class="stats" id="cStock"></div>
   <div class="row" style="justify-content:space-between;margin:14px 0 8px"><h2 style="margin:0">Ventes</h2><button class="ghost sm" id="csv">Exporter en CSV</button></div>
@@ -636,7 +655,7 @@ function renderCompta(){
  var per=$("#cper").value,since=0,now=new Date();
  if(per==="month")since=new Date(now.getFullYear(),now.getMonth(),1).getTime();else if(per!=="0")since=Date.now()-parseInt(per,10)*86400000;
  var sales=finRows.filter(function(f){return f.sold_at&&new Date(f.sold_at).getTime()>=since;}).sort(function(a,b){return new Date(b.sold_at)-new Date(a.sold_at);});
- curSales=sales;
+ curSales=sales;renderCharts(sales,per);
  var ca=0,caK=0,cost=0,miss=0;
  sales.forEach(function(f){var s=Number(f.sold_price)||0;ca+=s;if(f.purchase_price!=null){caK+=s;cost+=Number(f.purchase_price);}else miss++;});
  var mg=caK-cost,pct=caK?Math.round(mg/caK*100):null;
@@ -656,6 +675,66 @@ $("#csv").addEventListener("click",function(){
  var csv="\ufeff"+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"';}).join(";");}).join("\n");
  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ventes-phonetek.csv";a.click();
 });
+
+// ===== Graphiques (SVG, sans bibliothèque) =====
+var CCOL=["#1a63ff","#18a058","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899","#64748b","#84cc16","#f97316","#14b8a6","#a855f7"];
+function brandOf(f){
+ var p=phones.filter(function(x){return x.id===f.phone_id;})[0];if(p)return p.brand;
+ var l=f.label||"";for(var i=0;i<BRANDS.length;i++){if(l.indexOf(BRANDS[i]+" ")===0)return BRANDS[i];}return "Autres";
+}
+function short(n){n=Math.round(n);return Math.abs(n)>=1000?(n/1000).toFixed(1).replace(".0","").replace(".",",")+" k":String(n);}
+function hbars(rows,empty){
+ if(!rows.length)return '<div class="nodata">'+empty+'</div>';
+ var mx=Math.max.apply(null,rows.map(function(r){return Math.abs(r.v);}).concat([1]));
+ return rows.map(function(r,i){return '<div class="hb"><span class="hl" title="'+esc(r.l)+'">'+esc(r.l)+'</span><div class="ht"><div class="hf" style="width:'+Math.max(2,Math.abs(r.v)/mx*100)+'%;background:'+(r.v<0?'var(--red)':CCOL[i%CCOL.length])+'"></div></div><b style="color:'+(r.v<0?'var(--red)':'inherit')+'">'+money(r.v)+'</b></div>';}).join("");
+}
+function donut(rows){
+ if(!rows.length)return '<div class="nodata">Aucune vente sur cette période.</div>';
+ var tot=rows.reduce(function(s,r){return s+r.v;},0),R=54,C=2*Math.PI*R,cum=0,seg="";
+ rows.forEach(function(r,i){var len=r.v/tot*C;seg+='<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="'+CCOL[i%CCOL.length]+'" stroke-width="22" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-cum)+'" transform="rotate(-90 70 70)"><title>'+esc(r.l)+' : '+r.v+'</title></circle>';cum+=len;});
+ return '<div class="donut"><svg viewBox="0 0 140 140" width="150" height="150" role="img" aria-label="Ventes par marque">'+seg+'<text x="70" y="68" text-anchor="middle" font-size="26" font-weight="800" fill="#0a0f1a">'+tot+'</text><text x="70" y="86" text-anchor="middle" font-size="11" fill="#566074">vendus</text></svg><ul>'+
+  rows.map(function(r,i){return '<li><i style="background:'+CCOL[i%CCOL.length]+'"></i>'+esc(r.l)+' <b>'+r.v+'</b> <span style="color:var(--mut)">('+Math.round(r.v/tot*100)+' %)</span></li>';}).join("")+'</ul></div>';
+}
+function chartTime(sales,per){
+ var byDay=(per==="month"||per==="30"),now=new Date(),pad=function(n){return String(n).padStart(2,"0");};
+ var kd=function(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+(byDay?"-"+pad(d.getDate()):"");};
+ var start;
+ if(byDay)start=per==="month"?new Date(now.getFullYear(),now.getMonth(),1):new Date(Date.now()-29*86400000);
+ else if(per==="0"){var fs=sales.length?new Date(sales[sales.length-1].sold_at):now;start=new Date(fs.getFullYear(),fs.getMonth(),1);}
+ else start=new Date(now.getFullYear(),now.getMonth()-11,1);
+ var keys=[],labs=[],d=new Date(start.getFullYear(),start.getMonth(),start.getDate()),end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ while(d<=end){keys.push(kd(d));labs.push(byDay?pad(d.getDate())+"/"+pad(d.getMonth()+1):d.toLocaleDateString("fr-FR",{month:"short"})+" "+String(d.getFullYear()).slice(2));if(byDay)d.setDate(d.getDate()+1);else d.setMonth(d.getMonth()+1);}
+ var map={};
+ sales.forEach(function(f){var k=kd(new Date(f.sold_at)),o=map[k]=map[k]||{ca:0,mg:0},s=Number(f.sold_price)||0;o.ca+=s;if(f.purchase_price!=null)o.mg+=s-Number(f.purchase_price);});
+ if(!sales.length)return '<div class="nodata">Aucune vente sur cette période.</div>';
+ var vals=keys.map(function(k){return map[k]||{ca:0,mg:0};});
+ var W=700,H=250,L=48,Rr=8,T=12,B=30,n=keys.length,gw=(W-L-Rr)/n,bw=Math.max(3,Math.min(18,gw*.36));
+ var mx=Math.max.apply(null,vals.map(function(v){return Math.max(v.ca,v.mg);}).concat([1])),mn=Math.min.apply(null,vals.map(function(v){return v.mg;}).concat([0]));
+ var y=function(v){return T+(H-T-B)*(1-(v-mn)/(mx-mn));};
+ var g="";
+ for(var i=0;i<=4;i++){var tv=mn+(mx-mn)*i/4;g+='<line x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(tv)+'" y2="'+y(tv)+'" stroke="#e5ebf5"/><text x="'+(L-6)+'" y="'+(y(tv)+4)+'" text-anchor="end" font-size="11" fill="#566074">'+short(tv)+'</text>';}
+ g+='<line x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="#9aa6b8"/>';
+ var step=Math.ceil(n/10);
+ vals.forEach(function(v,i){
+  var x0=L+i*gw+gw/2,yc=y(v.ca),ym=v.mg>=0?y(v.mg):y(0);
+  g+='<rect class="b" x="'+(x0-bw-1)+'" y="'+yc+'" width="'+bw+'" height="'+Math.max(0,y(0)-yc)+'" rx="2" fill="#1a63ff"><title>'+labs[i]+' : ventes '+money(v.ca)+'</title></rect>';
+  g+='<rect class="b" x="'+(x0+1)+'" y="'+ym+'" width="'+bw+'" height="'+Math.abs(y(v.mg)-y(0))+'" rx="2" fill="'+(v.mg>=0?'#18a058':'#c4281c')+'"><title>'+labs[i]+' : marge '+money(v.mg)+'</title></rect>';
+  if(i%step===0)g+='<text x="'+x0+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="#566074">'+labs[i]+'</text>';
+ });
+ return '<div class="leg"><span><i style="background:#1a63ff"></i>Chiffre d’affaires</span><span><i style="background:#18a058"></i>Marge</span></div><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="Évolution des ventes">'+g+'</svg>';
+}
+function renderCharts(sales,per){
+ $("#chTime").innerHTML=chartTime(sales,per);
+ var mb={},cb={},mm={};
+ sales.forEach(function(f){
+  var b=brandOf(f);cb[b]=(cb[b]||0)+1;
+  if(f.purchase_price!=null){var m=(Number(f.sold_price)||0)-Number(f.purchase_price);mb[b]=(mb[b]||0)+m;var l=f.label||"(supprimé)";mm[l]=(mm[l]||0)+m;}
+ });
+ var sortR=function(o){return Object.keys(o).map(function(k){return {l:k,v:o[k]};}).sort(function(a,b){return b.v-a.v;});};
+ $("#chBrand").innerHTML=hbars(sortR(mb),"Ajoutez des prix d’achat pour voir la marge par marque.");
+ $("#chDonut").innerHTML=donut(sortR(cb));
+ $("#chTop").innerHTML=hbars(sortR(mm).slice(0,5),"Aucune vente avec prix d’achat sur cette période.");
+}
 init();
 </script>
 </body>
