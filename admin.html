@@ -52,6 +52,7 @@ table{width:100%;border-collapse:collapse;background:var(--card);border:1px soli
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:top}
 th{color:var(--mut);background:#f8fafd}
 .sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}.sw button{width:36px;height:36px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--bd)}.sw button[aria-pressed="true"]{outline:3px solid var(--ac);outline-offset:2px}.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #888}
+.pill.sold{background:#dbe6ff;color:var(--ac)}.item.sold{opacity:.8}
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
@@ -76,6 +77,7 @@ th{color:var(--mut);background:#f8fafd}
   <button data-tab="phones" aria-current="true">Téléphones</button>
   <button data-tab="requests" aria-current="false">Demandes<span class="badge hidden" id="newBadge"></span></button>
   <button data-tab="stats" aria-current="false">Statistiques</button>
+  <button data-tab="compta" aria-current="false">Compta</button>
 </nav>
 
 <section id="tab-phones">
@@ -95,7 +97,7 @@ th{color:var(--mut);background:#f8fafd}
         <label>Stockage<input id="pStorage" placeholder="128 Go"></label>
         <label>État<input id="pState" placeholder="Très bon état"></label>
         <label>Prix indicatif (€)<input id="pPrice" type="number" min="0"></label>
-        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label>
+        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label><label>Prix d’achat (€)<input id="pBuy" type="number" min="0" step="any"></label>
       </div>
       <label>Caractéristiques (une par ligne : Nom: valeur)<textarea id="pSpecs" rows="4"></textarea></label>
       <label class="row" style="color:var(--tx)"><input id="pVisible" type="checkbox" checked style="width:auto"> Visible sur le site</label>
@@ -104,7 +106,7 @@ th{color:var(--mut);background:#f8fafd}
     </form>
   </div>
 
-  <div class="bar"><input id="search" type="search" placeholder="Rechercher un téléphone…" aria-label="Rechercher"></div>
+  <div class="bar"><input id="search" type="search" placeholder="Rechercher un téléphone…" aria-label="Rechercher"><select id="flt" style="width:auto" aria-label="Filtrer"><option value="stock">En stock</option><option value="sold">Vendus</option><option value="all">Tous</option></select></div>
   <div id="list"></div>
 </section>
 
@@ -118,6 +120,17 @@ th{color:var(--mut);background:#f8fafd}
     <select id="period" style="width:auto"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="0">Tout</option></select></div>
   <div class="stats" id="totals"></div>
   <div class="wx"><table><thead><tr><th>Modèle</th><th>Vues</th><th>Appels</th><th>Demandes</th><th>Taux</th></tr></thead><tbody id="statBody"></tbody></table></div>
+</section>
+
+<section id="tab-compta" class="hidden">
+  <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Compta</h2>
+    <select id="cper" style="width:auto"><option value="month">Ce mois-ci</option><option value="30" selected>30 derniers jours</option><option value="365">12 derniers mois</option><option value="0">Tout</option></select></div>
+  <div id="cWarn"></div>
+  <div class="stats" id="cTot"></div>
+  <h2>Stock en cours</h2>
+  <div class="stats" id="cStock"></div>
+  <div class="row" style="justify-content:space-between;margin:14px 0 8px"><h2 style="margin:0">Ventes</h2><button class="ghost sm" id="csv">Exporter en CSV</button></div>
+  <div class="wx"><table><thead><tr><th>Date</th><th>Téléphone</th><th>Achat</th><th>Vente</th><th>Marge</th></tr></thead><tbody id="cBody"></tbody></table></div>
 </section>
 </main>
 </div>
@@ -252,7 +265,7 @@ var MODELS = [
 var BRANDS=[];MODELS.forEach(function(m){if(BRANDS.indexOf(m.b)<0)BRANDS.push(m.b);});
 var STARTER = ["iPhone 14","iPhone 13","Galaxy S23","Galaxy A54","Redmi Note 12","Pixel 7","iPhone 15 Pro","iPhone 12"]; // modèles ajoutés par « modèles de départ »
 
-var phones=[], requests=[], views=[], q="", qa={b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2};
+var phones=[], requests=[], views=[], fin={}, q="", qa={b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2,buy:""};
 var $=function(s){return document.querySelector(s);};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function eur(n){return n==null?"—":Number(n).toLocaleString("fr-FR")+" €";}
@@ -273,14 +286,15 @@ function showApp(){$("#loginView").classList.add("hidden");$("#appView").classLi
 
 document.querySelectorAll("nav [data-tab]").forEach(function(b){b.addEventListener("click",function(){
  document.querySelectorAll("nav [data-tab]").forEach(function(x){x.setAttribute("aria-current",x===b?"true":"false");});
- ["phones","requests","stats"].forEach(function(t){$("#tab-"+t).classList.toggle("hidden",t!==b.dataset.tab);});
+ ["phones","requests","stats","compta"].forEach(function(t){$("#tab-"+t).classList.toggle("hidden",t!==b.dataset.tab);});
 });});
 
 async function loadAll(){
  phones=(await sb.from("phones").select("*").order("created_at",{ascending:false})).data||[];
  requests=(await sb.from("requests").select("*").order("created_at",{ascending:false})).data||[];
  views=(await sb.from("views").select("phone_id,kind,created_at")).data||[];
- renderList();renderRequests();renderStats();
+ var fr=await sb.from("phone_finance").select("*");finErr=fr.error;finRows=fr.data||[];fin={};finRows.forEach(function(f){if(f.phone_id!=null)fin[f.phone_id]=f;});
+ renderList();renderRequests();renderStats();renderCompta();
 }
 
 // ===== Ajout rapide =====
@@ -295,7 +309,7 @@ function renderQA(){
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
   h+='<div class="step">5. Couleur : '+PAL[qa.co][0]+'</div><div class="sw">'+PAL.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+c[0]+'" title="'+c[0]+'" style="background:'+c[1]+'"></button>';}).join("")+'</div>';
   h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
-  h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label></div>';
+  h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label><label>Prix d’achat (€)<input id="qaBuy" type="number" min="0" step="any" value="'+qa.buy+'"></label></div>';
   h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
  $("#qa").innerHTML=h;
 }
@@ -312,13 +326,14 @@ $("#qa").addEventListener("click",async function(e){
   var m=MODELS[qa.m],p=$("#qaPrice").value;c.disabled=true;
   var sp={"Couleur":PAL[qa.co][0]};for(var k in m.s)sp[k]=m.s[k];
   if(qa.bat)sp["Batterie"]=qa.bat;sp["Garantie"]=WAR[qa.w];
-  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:PAL[qa.co][1],specs:sp,visible:true});
+  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:PAL[qa.co][1],specs:sp,visible:true}).select("id").single();
   if(r.error){toast("Erreur : "+r.error.message);c.disabled=false;return;}
+  if(qa.buy!=="")await saveBuy(r.data.id,qa.buy,m.b+" "+m.n+" "+qa.st);
   toast(m.n+" "+qa.st+" "+PAL[qa.co][0].toLowerCase()+" ajouté");await loadAll();
  }
  renderQA();
 });
-$("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;if(e.target.id==="qaBat")qa.bat=e.target.value;});
+$("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;if(e.target.id==="qaBat")qa.bat=e.target.value;if(e.target.id==="qaBuy")qa.buy=e.target.value;});
 $("#qaSearch").addEventListener("input",function(){
  var v=this.value.toLowerCase().trim();if(!v){$("#qaRes").innerHTML="";return;}
  var r=MODELS.map(function(m,i){return {m:m,i:i};}).filter(function(x){return (x.m.b+" "+x.m.n).toLowerCase().indexOf(v)>=0;}).slice(0,14);
@@ -328,17 +343,27 @@ $("#qaRes").addEventListener("click",function(e){var c=e.target.closest("[data-p
 
 // ===== Liste =====
 $("#search").addEventListener("input",function(){q=this.value.toLowerCase();renderList();});
+$("#flt").addEventListener("change",function(){flt=this.value;renderList();});
+function money(n){return n==null||isNaN(n)?"—":Number(n).toLocaleString("fr-FR",{maximumFractionDigits:2})+" €";}
 function renderList(){
- var items=phones.filter(function(p){return (p.brand+" "+p.name+" "+(p.storage||"")).toLowerCase().indexOf(q)>=0;});
+ var items=phones.filter(function(p){
+  var sold=!!(fin[p.id]&&fin[p.id].sold_at);
+  if(flt==="stock"&&sold)return false;if(flt==="sold"&&!sold)return false;
+  return (p.brand+" "+p.name+" "+(p.storage||"")).toLowerCase().indexOf(q)>=0;
+ });
  if(!phones.length){
   $("#list").innerHTML='<div class="card">Aucun téléphone pour le moment.<br><br><button id="starter">Ajouter 8 modèles de départ</button></div>';return;
  }
  $("#list").innerHTML=items.map(function(p){
-  return '<div class="item'+(p.visible?'':' off')+'"><div><span class="dot" style="background:'+esc(p.color||"#888")+'"></span> <b>'+esc(p.brand)+' '+esc(p.name)+'</b> <span class="pill'+(p.visible?'':' off')+'">'+(p.visible?'Visible':'Masqué')+'</span><br><small>'+esc(p.storage)+' · '+esc(p.state)+'</small></div>'+
-  '<div class="row"><input class="price" type="number" min="0" value="'+(p.price==null?'':p.price)+'" data-price="'+p.id+'" aria-label="Prix"> €'+
-  '<button class="ghost sm" data-act="toggle" data-id="'+p.id+'">'+(p.visible?'Masquer':'Afficher')+'</button>'+
-  '<button class="ghost sm" data-act="dup" data-id="'+p.id+'">Dupliquer</button>'+'<button class="ghost sm" data-act="edit" data-id="'+p.id+'">Modifier</button>'+
-  '<button class="danger sm" data-act="del" data-id="'+p.id+'">Supprimer</button></div></div>';
+  var f=fin[p.id]||{},sold=!!f.sold_at,buy=f.purchase_price,sell=sold?f.sold_price:p.price;
+  var mg=(buy!=null&&sell!=null)?sell-buy:null;
+  var pill=sold?'<span class="pill sold">Vendu</span>':'<span class="pill'+(p.visible?'':' off')+'">'+(p.visible?'Visible':'Masqué')+'</span>';
+  var info=esc(p.storage)+' · '+esc(p.state)+(sold?' · vendu '+money(f.sold_price)+' le '+dt(f.sold_at):'')+(mg!=null?' · marge <b style="color:'+(mg>=0?'var(--ok)':'var(--red)')+'">'+money(mg)+'</b>':'');
+  return '<div class="item'+(sold?' sold':(p.visible?'':' off'))+'"><div><span class="dot" style="background:'+esc(p.color||"#888")+'"></span> <b>'+esc(p.brand)+' '+esc(p.name)+'</b> '+pill+'<br><small>'+info+'</small></div>'+
+  '<div class="row">'+(sold?'':'<input class="price" type="number" min="0" value="'+(p.price==null?'':p.price)+'" data-price="'+p.id+'" aria-label="Prix de vente" placeholder="Vente"> €')+
+  '<input class="price" type="number" min="0" step="any" value="'+(buy==null?'':buy)+'" data-buy="'+p.id+'" aria-label="Prix d’achat" placeholder="Achat"> €'+
+  (sold?'<button class="ghost sm" data-act="undo" data-id="'+p.id+'">Annuler la vente</button>':'<button class="sm" data-act="sold" data-id="'+p.id+'">Vendu</button><button class="ghost sm" data-act="toggle" data-id="'+p.id+'">'+(p.visible?'Masquer':'Afficher')+'</button>')+
+  '<button class="ghost sm" data-act="dup" data-id="'+p.id+'">Dupliquer</button><button class="ghost sm" data-act="edit" data-id="'+p.id+'">Modifier</button><button class="danger sm" data-act="del" data-id="'+p.id+'">Supprimer</button></div></div>';
  }).join("")||'<div class="card">Aucun résultat.</div>';
 }
 $("#list").addEventListener("click",async function(e){
@@ -350,11 +375,14 @@ $("#list").addEventListener("click",async function(e){
  var b=e.target.closest("[data-act]");if(!b)return;
  var id=b.dataset.id,p=phones.filter(function(x){return String(x.id)===id;})[0];if(!p)return;
  if(b.dataset.act==="edit")openForm(p);
- if(b.dataset.act==="dup"){var cp={brand:p.brand,name:p.name,storage:p.storage,state:p.state,price:p.price,color:p.color,photo_url:p.photo_url,specs:p.specs,visible:p.visible};var rr=await sb.from("phones").insert(cp);toast(rr.error?"Erreur : "+rr.error.message:"Copie ajoutée : cliquez sur Modifier pour changer la couleur ou le stockage");loadAll();}
+ if(b.dataset.act==="sold")return markSold(p);
+ if(b.dataset.act==="undo")return undoSold(p);
+ if(b.dataset.act==="dup"){var cp={brand:p.brand,name:p.name,storage:p.storage,state:p.state,price:p.price,color:p.color,photo_url:p.photo_url,specs:p.specs,visible:p.visible};var rr=await sb.from("phones").insert(cp).select("id").single();if(!rr.error&&fin[p.id]&&fin[p.id].purchase_price!=null)await sb.from("phone_finance").insert({phone_id:rr.data.id,label:fin[p.id].label,purchase_price:fin[p.id].purchase_price});toast(rr.error?"Erreur : "+rr.error.message:"Copie ajoutée : cliquez sur Modifier pour changer la couleur ou le stockage");loadAll();}
  if(b.dataset.act==="toggle"){await sb.from("phones").update({visible:!p.visible}).eq("id",id);toast(p.visible?"Masqué":"Affiché");loadAll();}
  if(b.dataset.act==="del"){if(!confirm("Supprimer « "+p.brand+" "+p.name+" » ? Vous pouvez aussi le masquer."))return;await sb.from("phones").delete().eq("id",id);toast("Supprimé");loadAll();}
 });
 $("#list").addEventListener("change",async function(e){
+ var bi=e.target.closest("[data-buy]");if(bi){await saveBuy(+bi.dataset.buy,bi.value);toast("Prix d’achat enregistré");await loadAll();return;}
  var i=e.target.closest("[data-price]");if(!i)return;
  var r=await sb.from("phones").update({price:i.value===""?null:parseInt(i.value,10)}).eq("id",i.dataset.price);
  toast(r.error?"Erreur : "+r.error.message:"Prix mis à jour");
@@ -368,7 +396,7 @@ function openForm(p){
  $("#pId").value=p?p.id:"";$("#pBrand").value=p?p.brand:"";$("#pName").value=p?p.name:"";
  $("#pStorage").value=p?(p.storage||""):"";$("#pState").value=p?(p.state||""):"";
  $("#pPrice").value=p&&p.price!=null?p.price:"";$("#pPhoto").value=p?(p.photo_url||""):"";
- $("#pVisible").checked=p?p.visible:true;$("#pColor").value=p&&p.color&&/^#[0-9a-f]{6}$/i.test(p.color)?p.color:"#15181f";
+ $("#pVisible").checked=p?p.visible:true;$("#pBuy").value=p&&fin[p.id]&&fin[p.id].purchase_price!=null?fin[p.id].purchase_price:"";$("#pColor").value=p&&p.color&&/^#[0-9a-f]{6}$/i.test(p.color)?p.color:"#15181f";
  $("#pSpecs").value=p&&p.specs?Object.keys(p.specs).map(function(k){return k+": "+p.specs[k];}).join("\n"):"";
  $("#phoneForm").classList.remove("hidden");$("#phoneForm").scrollIntoView({behavior:"smooth"});$("#pBrand").focus();
 }
@@ -379,8 +407,9 @@ $("#pf").addEventListener("submit",async function(e){
  var d={brand:brand,name:$("#pName").value.trim(),storage:$("#pStorage").value.trim()||null,state:$("#pState").value.trim()||null,
   price:pv===""?null:parseInt(pv,10),color:$("#pColor").value,photo_url:$("#pPhoto").value.trim()||null,specs:parseSpecs($("#pSpecs").value),visible:$("#pVisible").checked};
  var id=$("#pId").value;
- var r=id?await sb.from("phones").update(d).eq("id",id):await sb.from("phones").insert(d);
+ var r=id?await sb.from("phones").update(d).eq("id",id):await sb.from("phones").insert(d).select("id").single();
  if(r.error){$("#pErr").textContent="Erreur : "+r.error.message;return;}
+ var bv=$("#pBuy").value,pid=id?+id:r.data.id;await saveBuy(pid,bv,d.brand+" "+d.name+" "+(d.storage||""));
  $("#phoneForm").classList.add("hidden");toast("Enregistré");loadAll();
 });
 
@@ -417,6 +446,60 @@ function renderStats(){
  $("#totals").innerHTML='<div class="stat"><b>'+sum("v")+'</b><span>Consultations</span></div><div class="stat"><b>'+sum("c")+'</b><span>Clics « Appeler »</span></div><div class="stat"><b>'+sum("r")+'</b><span>Demandes</span></div>';
  $("#statBody").innerHTML=rows.map(function(r){return '<tr><td><b>'+esc(r.p.brand)+'</b> '+esc(r.p.name)+' <small>'+esc(r.p.storage)+'</small></td><td>'+r.v+'</td><td>'+r.c+'</td><td>'+r.r+'</td><td>'+(r.t==null?'—':r.t+' %')+'</td></tr>';}).join("")||'<tr><td colspan="5">Aucun téléphone.</td></tr>';
 }
+
+// ===== Compta et ventes =====
+var finRows=[], finErr=null, flt="stock", curSales=[];
+async function saveBuy(id,v,label){
+ var val=v===""||v==null?null:parseFloat(String(v).replace(",","."));
+ var f=fin[id];if(!f&&val==null)return;
+ var p=phones.filter(function(x){return x.id===id;})[0];
+ var r=f?await sb.from("phone_finance").update({purchase_price:val}).eq("id",f.id)
+        :await sb.from("phone_finance").insert({phone_id:id,label:label||(p?p.brand+" "+p.name+" "+(p.storage||""):""),purchase_price:val});
+ if(r.error)toast("Compta : "+r.error.message);
+}
+async function markSold(p){
+ var v=prompt("Prix de vente final (€) pour "+p.brand+" "+p.name+" ?",p.price==null?"":p.price);
+ if(v===null)return;
+ var sp=parseFloat(String(v).replace(",","."));if(isNaN(sp)){toast("Prix invalide");return;}
+ var f=fin[p.id],row={sold_price:sp,sold_at:new Date().toISOString()};
+ var r=f?await sb.from("phone_finance").update(row).eq("id",f.id)
+        :await sb.from("phone_finance").insert(Object.assign({phone_id:p.id,label:p.brand+" "+p.name+" "+(p.storage||"")},row));
+ if(r.error){toast("Erreur : "+r.error.message);return;}
+ await sb.from("phones").update({visible:false}).eq("id",p.id);
+ toast("Vendu, retiré de la vitrine");loadAll();
+}
+async function undoSold(p){
+ var f=fin[p.id];if(!f)return;
+ if(!confirm("Annuler la vente de "+p.brand+" "+p.name+" ?"))return;
+ await sb.from("phone_finance").update({sold_price:null,sold_at:null}).eq("id",f.id);
+ toast("Vente annulée (le téléphone reste masqué)");loadAll();
+}
+$("#cper").addEventListener("change",renderCompta);
+function renderCompta(){
+ $("#cWarn").innerHTML=finErr?'<div class="card">La table de comptabilité n’existe pas encore. Exécutez le SQL fourni dans Supabase (SQL Editor), puis rechargez la page.</div>':"";
+ var per=$("#cper").value,since=0,now=new Date();
+ if(per==="month")since=new Date(now.getFullYear(),now.getMonth(),1).getTime();else if(per!=="0")since=Date.now()-parseInt(per,10)*86400000;
+ var sales=finRows.filter(function(f){return f.sold_at&&new Date(f.sold_at).getTime()>=since;}).sort(function(a,b){return new Date(b.sold_at)-new Date(a.sold_at);});
+ curSales=sales;
+ var ca=0,caK=0,cost=0,miss=0;
+ sales.forEach(function(f){var s=Number(f.sold_price)||0;ca+=s;if(f.purchase_price!=null){caK+=s;cost+=Number(f.purchase_price);}else miss++;});
+ var mg=caK-cost,pct=caK?Math.round(mg/caK*100):null;
+ var card=function(v,l,c){return '<div class="stat"><b'+(c?' style="color:'+c+'"':'')+'>'+v+'</b><span>'+l+'</span></div>';};
+ $("#cTot").innerHTML=card(sales.length,"Téléphones vendus")+card(money(ca),"Chiffre d’affaires")+card(money(cost),"Coût d’achat")+card(money(mg),"Marge"+(pct==null?"":" ("+pct+" %)"),mg>=0?"var(--ok)":"var(--red)")+(miss?card(miss,"Ventes sans prix d’achat (marge non comptée)","var(--red)"):"");
+ var stock=phones.filter(function(p){return !(fin[p.id]&&fin[p.id].sold_at);});
+ var sb2=0,sv=0,pm=0,nb=0;
+ stock.forEach(function(p){var f=fin[p.id]||{};sv+=Number(p.price)||0;if(f.purchase_price!=null){sb2+=Number(f.purchase_price);nb++;if(p.price!=null)pm+=p.price-f.purchase_price;}});
+ $("#cStock").innerHTML=card(stock.length,"Téléphones en stock")+card(money(sb2),"Valeur d’achat du stock")+card(money(sv),"Valeur de vente du stock")+card(money(pm),"Marge potentielle",pm>=0?"var(--ok)":"var(--red)");
+ $("#cBody").innerHTML=sales.map(function(f){
+  var m=f.purchase_price!=null?f.sold_price-f.purchase_price:null;
+  return '<tr><td>'+dt(f.sold_at)+'</td><td>'+esc(f.label||"(téléphone supprimé)")+'</td><td>'+money(f.purchase_price)+'</td><td>'+money(f.sold_price)+'</td><td><b style="color:'+(m==null?'inherit':(m>=0?'var(--ok)':'var(--red)'))+'">'+money(m)+'</b></td></tr>';
+ }).join("")||'<tr><td colspan="5">Aucune vente sur cette période.</td></tr>';
+}
+$("#csv").addEventListener("click",function(){
+ var rows=[["Date","Téléphone","Achat","Vente","Marge"]].concat(curSales.map(function(f){return [dt(f.sold_at),f.label||"",f.purchase_price==null?"":f.purchase_price,f.sold_price==null?"":f.sold_price,f.purchase_price==null?"":f.sold_price-f.purchase_price];}));
+ var csv="\ufeff"+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"';}).join(";");}).join("\n");
+ var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ventes-phonetek.csv";a.click();
+});
 init();
 </script>
 </body>
