@@ -51,6 +51,7 @@ nav button[aria-current="true"]{background:var(--ac);color:#fff;border-color:var
 table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
 th,td{text-align:left;padding:10px;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:top}
 th{color:var(--mut);background:#f8fafd}
+.sw{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}.sw button{width:36px;height:36px;min-height:0;padding:0;border-radius:50%;border:2px solid var(--bd)}.sw button[aria-pressed="true"]{outline:3px solid var(--ac);outline-offset:2px}.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid #888}
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
@@ -80,7 +81,7 @@ th{color:var(--mut);background:#f8fafd}
 <section id="tab-phones">
   <div class="card" id="qaCard">
     <h2>Ajouter un téléphone</h2>
-    <div id="qa"></div>
+    <input id="qaSearch" type="search" placeholder="Rechercher un modèle (ex : iPhone 13, S23, Pixel 8…)" aria-label="Rechercher un modèle" style="margin-bottom:10px"><div id="qaRes"></div><div id="qa"></div>
     <button class="ghost sm" id="freeBtn">Autre modèle (saisie libre)</button>
   </div>
 
@@ -94,7 +95,7 @@ th{color:var(--mut);background:#f8fafd}
         <label>Stockage<input id="pStorage" placeholder="128 Go"></label>
         <label>État<input id="pState" placeholder="Très bon état"></label>
         <label>Prix indicatif (€)<input id="pPrice" type="number" min="0"></label>
-        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label>
+        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label>
       </div>
       <label>Caractéristiques (une par ligne : Nom: valeur)<textarea id="pSpecs" rows="4"></textarea></label>
       <label class="row" style="color:var(--tx)"><input id="pVisible" type="checkbox" checked style="width:auto"> Visible sur le site</label>
@@ -130,28 +131,128 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ===== Catalogue de modèles : p = prix indicatif du 1er stockage "comme neuf", step = supplément par stockage =====
 var STATES = [["Comme neuf",1],["Très bon état",.92],["Bon état",.82],["Correct",.7]];
 var BC = {Apple:"#1f2a44",Samsung:"#4b3a6e",Xiaomi:"#8a5a1f",Google:"#3d7a4a"};
+var PAL=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"],["Orange","#d9772b"],["Jaune","#e0b93a"],["Titane naturel","#a79f94"],["Titane désert","#b8a28a"]];
+var WAR=["Sans garantie","3 mois","6 mois","12 mois"];
 function S(e,b,c,g){return {"Écran":e,"Batterie":b,"Appareil photo":c,"Garantie":g||"6 mois"};}
 var MODELS = [
- {b:"Apple",n:"iPhone 11",st:["64 Go","128 Go"],p:249,step:30,s:S('6,1" LCD','Santé 85 %',"12 Mpx double")},
- {b:"Apple",n:"iPhone 12",st:["64 Go","128 Go","256 Go"],p:309,step:40,s:S('6,1" OLED','Santé 86 %',"12 Mpx double")},
- {b:"Apple",n:"iPhone 13",st:["128 Go","256 Go","512 Go"],p:419,step:50,s:S('6,1" OLED','Santé 88 %',"12 Mpx double")},
- {b:"Apple",n:"iPhone 14",st:["128 Go","256 Go"],p:529,step:60,s:S('6,1" OLED','Santé 90 %',"12 Mpx double")},
- {b:"Apple",n:"iPhone 15",st:["128 Go","256 Go"],p:669,step:70,s:S('6,1" OLED 60 Hz',"Santé 93 %","48 Mpx double")},
- {b:"Apple",n:"iPhone 15 Pro",st:["128 Go","256 Go","512 Go"],p:849,step:90,s:S('6,1" OLED 120 Hz',"Santé 93 %","48 Mpx triple")},
- {b:"Samsung",n:"Galaxy S22",st:["128 Go","256 Go"],p:339,step:40,s:S('6,1" AMOLED 120 Hz',"3700 mAh","50 Mpx triple")},
- {b:"Samsung",n:"Galaxy S23",st:["128 Go","256 Go"],p:459,step:50,s:S('6,1" AMOLED 120 Hz',"3900 mAh","50 Mpx triple")},
- {b:"Samsung",n:"Galaxy S24",st:["128 Go","256 Go"],p:629,step:60,s:S('6,2" AMOLED 120 Hz',"4000 mAh","50 Mpx triple")},
- {b:"Samsung",n:"Galaxy A54",st:["128 Go","256 Go"],p:249,step:30,s:S('6,4" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {b:"Samsung",n:"Galaxy A35",st:["128 Go","256 Go"],p:279,step:30,s:S('6,6" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {b:"Xiaomi",n:"Redmi Note 12",st:["128 Go","256 Go"],p:169,step:25,s:S('6,67" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {b:"Xiaomi",n:"Redmi Note 13",st:["128 Go","256 Go"],p:199,step:25,s:S('6,67" AMOLED 120 Hz',"5000 mAh","108 Mpx triple")},
- {b:"Xiaomi",n:"Xiaomi 13T",st:["256 Go"],p:339,step:0,s:S('6,67" AMOLED 144 Hz',"5000 mAh","50 Mpx triple")},
- {b:"Google",n:"Pixel 7",st:["128 Go","256 Go"],p:299,step:40,s:S('6,3" OLED 90 Hz',"4355 mAh","50 Mpx double")},
- {b:"Google",n:"Pixel 8",st:["128 Go","256 Go"],p:429,step:50,s:S('6,2" OLED 120 Hz',"4575 mAh","50 Mpx double")}
+ {b:"Apple",n:"iPhone 7",st:["32 Go", "128 Go", "256 Go"],p:79,step:15,s:S("4,7\" LCD","Santé 80 %","12 Mpx")},
+ {b:"Apple",n:"iPhone 7 Plus",st:["32 Go", "128 Go", "256 Go"],p:99,step:15,s:S("5,5\" LCD","Santé 80 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 8",st:["64 Go", "128 Go", "256 Go"],p:109,step:15,s:S("4,7\" LCD","Santé 82 %","12 Mpx")},
+ {b:"Apple",n:"iPhone 8 Plus",st:["64 Go", "128 Go", "256 Go"],p:139,step:15,s:S("5,5\" LCD","Santé 82 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone X",st:["64 Go", "256 Go"],p:169,step:30,s:S("5,8\" OLED","Santé 82 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone XR",st:["64 Go", "128 Go", "256 Go"],p:189,step:20,s:S("6,1\" LCD","Santé 83 %","12 Mpx")},
+ {b:"Apple",n:"iPhone XS",st:["64 Go", "256 Go", "512 Go"],p:219,step:30,s:S("5,8\" OLED","Santé 83 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone XS Max",st:["64 Go", "256 Go", "512 Go"],p:259,step:30,s:S("6,5\" OLED","Santé 83 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 11",st:["64 Go", "128 Go", "256 Go"],p:249,step:30,s:S("6,1\" LCD","Santé 85 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 11 Pro",st:["64 Go", "256 Go", "512 Go"],p:329,step:40,s:S("5,8\" OLED","Santé 85 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone 11 Pro Max",st:["64 Go", "256 Go", "512 Go"],p:379,step:40,s:S("6,5\" OLED","Santé 85 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone SE (2020)",st:["64 Go", "128 Go", "256 Go"],p:139,step:20,s:S("4,7\" LCD","Santé 84 %","12 Mpx")},
+ {b:"Apple",n:"iPhone SE (2022)",st:["64 Go", "128 Go", "256 Go"],p:199,step:25,s:S("4,7\" LCD","Santé 88 %","12 Mpx")},
+ {b:"Apple",n:"iPhone 12 mini",st:["64 Go", "128 Go", "256 Go"],p:269,step:30,s:S("5,4\" OLED","Santé 85 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 12",st:["64 Go", "128 Go", "256 Go"],p:309,step:40,s:S("6,1\" OLED","Santé 86 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 12 Pro",st:["128 Go", "256 Go", "512 Go"],p:389,step:40,s:S("6,1\" OLED","Santé 86 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone 12 Pro Max",st:["128 Go", "256 Go", "512 Go"],p:449,step:45,s:S("6,7\" OLED","Santé 86 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone 13 mini",st:["128 Go", "256 Go", "512 Go"],p:339,step:40,s:S("5,4\" OLED","Santé 88 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 13",st:["128 Go", "256 Go", "512 Go"],p:419,step:50,s:S("6,1\" OLED","Santé 88 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 13 Pro",st:["128 Go", "256 Go", "512 Go", "1 To"],p:519,step:50,s:S("6,1\" OLED 120 Hz","Santé 88 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone 13 Pro Max",st:["128 Go", "256 Go", "512 Go", "1 To"],p:599,step:50,s:S("6,7\" OLED 120 Hz","Santé 88 %","12 Mpx triple")},
+ {b:"Apple",n:"iPhone 14",st:["128 Go", "256 Go", "512 Go"],p:529,step:60,s:S("6,1\" OLED","Santé 90 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 14 Plus",st:["128 Go", "256 Go", "512 Go"],p:579,step:60,s:S("6,7\" OLED","Santé 90 %","12 Mpx double")},
+ {b:"Apple",n:"iPhone 14 Pro",st:["128 Go", "256 Go", "512 Go", "1 To"],p:679,step:70,s:S("6,1\" OLED 120 Hz","Santé 90 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 14 Pro Max",st:["128 Go", "256 Go", "512 Go", "1 To"],p:759,step:70,s:S("6,7\" OLED 120 Hz","Santé 90 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 15",st:["128 Go", "256 Go", "512 Go"],p:669,step:70,s:S("6,1\" OLED","Santé 93 %","48 Mpx double")},
+ {b:"Apple",n:"iPhone 15 Plus",st:["128 Go", "256 Go", "512 Go"],p:729,step:70,s:S("6,7\" OLED","Santé 93 %","48 Mpx double")},
+ {b:"Apple",n:"iPhone 15 Pro",st:["128 Go", "256 Go", "512 Go", "1 To"],p:849,step:90,s:S("6,1\" OLED 120 Hz","Santé 93 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 15 Pro Max",st:["256 Go", "512 Go", "1 To"],p:969,step:100,s:S("6,7\" OLED 120 Hz","Santé 93 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 16e",st:["128 Go", "256 Go", "512 Go"],p:549,step:60,s:S("6,1\" OLED","Santé 96 %","48 Mpx")},
+ {b:"Apple",n:"iPhone 16",st:["128 Go", "256 Go", "512 Go"],p:749,step:80,s:S("6,1\" OLED","Santé 96 %","48 Mpx double")},
+ {b:"Apple",n:"iPhone 16 Plus",st:["128 Go", "256 Go", "512 Go"],p:849,step:80,s:S("6,7\" OLED","Santé 96 %","48 Mpx double")},
+ {b:"Apple",n:"iPhone 16 Pro",st:["128 Go", "256 Go", "512 Go", "1 To"],p:999,step:100,s:S("6,3\" OLED 120 Hz","Santé 96 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 16 Pro Max",st:["256 Go", "512 Go", "1 To"],p:1099,step:110,s:S("6,9\" OLED 120 Hz","Santé 96 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 17",st:["256 Go", "512 Go"],p:849,step:100,s:S("6,3\" OLED 120 Hz","Santé 98 %","48 Mpx double")},
+ {b:"Apple",n:"iPhone Air",st:["256 Go", "512 Go", "1 To"],p:1049,step:100,s:S("6,5\" OLED 120 Hz","Santé 98 %","48 Mpx")},
+ {b:"Apple",n:"iPhone 17 Pro",st:["256 Go", "512 Go", "1 To"],p:1199,step:120,s:S("6,3\" OLED 120 Hz","Santé 98 %","48 Mpx triple")},
+ {b:"Apple",n:"iPhone 17 Pro Max",st:["256 Go", "512 Go", "1 To"],p:1349,step:120,s:S("6,9\" OLED 120 Hz","Santé 98 %","48 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S21",st:["128", "256"],p:249,step:30,s:S("6,2\" AMOLED 120 Hz","4000 mAh","12 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S21 Ultra",st:["128", "256", "512"],p:359,step:40,s:S("6,8\" AMOLED 120 Hz","5000 mAh","108 Mpx quadruple")},
+ {b:"Samsung",n:"Galaxy S22",st:["128", "256"],p:339,step:40,s:S("6,1\" AMOLED 120 Hz","3700 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S22 Ultra",st:["128", "256", "512"],p:459,step:50,s:S("6,8\" AMOLED 120 Hz","5000 mAh","108 Mpx quadruple")},
+ {b:"Samsung",n:"Galaxy S23",st:["128", "256", "512"],p:459,step:50,s:S("6,1\" AMOLED 120 Hz","3900 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S23 Ultra",st:["256", "512", "1 To"],p:599,step:60,s:S("6,8\" AMOLED 120 Hz","5000 mAh","200 Mpx quadruple")},
+ {b:"Samsung",n:"Galaxy S24",st:["128", "256", "512"],p:579,step:50,s:S("6,2\" AMOLED 120 Hz","4000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S24 Ultra",st:["256", "512", "1 To"],p:799,step:70,s:S("6,8\" AMOLED 120 Hz","5000 mAh","200 Mpx quadruple")},
+ {b:"Samsung",n:"Galaxy S25",st:["128", "256", "512"],p:699,step:60,s:S("6,2\" AMOLED 120 Hz","4000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy S25 Ultra",st:["256", "512", "1 To"],p:949,step:80,s:S("6,9\" AMOLED 120 Hz","5000 mAh","200 Mpx quadruple")},
+ {b:"Samsung",n:"Galaxy Z Flip5",st:["256", "512"],p:399,step:50,s:S("6,7\" AMOLED pliable","3700 mAh","12 Mpx double")},
+ {b:"Samsung",n:"Galaxy Z Fold5",st:["256", "512", "1 To"],p:849,step:60,s:S("7,6\" AMOLED pliable","4400 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A14",st:["64", "128"],p:109,step:20,s:S("6,6\" LCD 90 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A15",st:["128", "256"],p:139,step:20,s:S("6,5\" AMOLED 90 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A25",st:["128", "256"],p:169,step:20,s:S("6,5\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A34",st:["128", "256"],p:209,step:25,s:S("6,6\" AMOLED 120 Hz","5000 mAh","48 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A35",st:["128", "256"],p:279,step:30,s:S("6,6\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A54",st:["128", "256"],p:249,step:30,s:S("6,4\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Samsung",n:"Galaxy A55",st:["128", "256"],p:319,step:30,s:S("6,6\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Xiaomi",n:"Redmi Note 11",st:["64", "128"],p:119,step:20,s:S("6,43\" AMOLED 90 Hz","5000 mAh","50 Mpx quadruple")},
+ {b:"Xiaomi",n:"Redmi Note 12",st:["128", "256"],p:169,step:25,s:S("6,67\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Xiaomi",n:"Redmi Note 13",st:["128", "256"],p:199,step:25,s:S("6,67\" AMOLED 120 Hz","5000 mAh","108 Mpx triple")},
+ {b:"Xiaomi",n:"Redmi Note 13 Pro",st:["128", "256", "512"],p:249,step:30,s:S("6,67\" AMOLED 120 Hz","5100 mAh","200 Mpx triple")},
+ {b:"Xiaomi",n:"Redmi Note 14",st:["128", "256"],p:219,step:25,s:S("6,67\" AMOLED 120 Hz","5500 mAh","108 Mpx triple")},
+ {b:"Xiaomi",n:"Redmi Note 14 Pro",st:["256", "512"],p:289,step:30,s:S("6,67\" AMOLED 120 Hz","5500 mAh","200 Mpx triple")},
+ {b:"Xiaomi",n:"Xiaomi 12T",st:["128", "256"],p:279,step:30,s:S("6,67\" AMOLED 120 Hz","5000 mAh","108 Mpx triple")},
+ {b:"Xiaomi",n:"Xiaomi 13T",st:["256"],p:339,step:0,s:S("6,67\" AMOLED 144 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Xiaomi",n:"Xiaomi 13T Pro",st:["256", "512", "1 To"],p:429,step:50,s:S("6,67\" AMOLED 144 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Xiaomi",n:"Xiaomi 14T",st:["256", "512"],p:449,step:50,s:S("6,67\" AMOLED 144 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Xiaomi",n:"Poco X6 Pro",st:["256", "512"],p:249,step:30,s:S("6,67\" AMOLED 120 Hz","5000 mAh","64 Mpx triple")},
+ {b:"Xiaomi",n:"Poco F5",st:["256", "512"],p:259,step:30,s:S("6,67\" AMOLED 120 Hz","5000 mAh","64 Mpx triple")},
+ {b:"Google",n:"Pixel 6a",st:["128"],p:179,step:0,s:S("6,1\" OLED 60 Hz","4410 mAh","12 Mpx double")},
+ {b:"Google",n:"Pixel 7",st:["128", "256"],p:299,step:40,s:S("6,3\" OLED 90 Hz","4355 mAh","50 Mpx double")},
+ {b:"Google",n:"Pixel 7a",st:["128"],p:279,step:0,s:S("6,1\" OLED 90 Hz","4385 mAh","64 Mpx double")},
+ {b:"Google",n:"Pixel 7 Pro",st:["128", "256", "512"],p:379,step:45,s:S("6,7\" OLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Google",n:"Pixel 8",st:["128", "256"],p:429,step:50,s:S("6,2\" OLED 120 Hz","4575 mAh","50 Mpx double")},
+ {b:"Google",n:"Pixel 8a",st:["128", "256"],p:379,step:40,s:S("6,1\" OLED 120 Hz","4492 mAh","64 Mpx double")},
+ {b:"Google",n:"Pixel 8 Pro",st:["128", "256", "512", "1 To"],p:549,step:60,s:S("6,7\" OLED 120 Hz","5050 mAh","50 Mpx triple")},
+ {b:"Google",n:"Pixel 9",st:["128", "256"],p:549,step:50,s:S("6,3\" OLED 120 Hz","4700 mAh","50 Mpx double")},
+ {b:"Google",n:"Pixel 9 Pro",st:["128", "256", "512", "1 To"],p:699,step:60,s:S("6,3\" OLED 120 Hz","4700 mAh","50 Mpx triple")},
+ {b:"Google",n:"Pixel 9a",st:["128", "256"],p:449,step:40,s:S("6,3\" OLED 120 Hz","5100 mAh","48 Mpx double")},
+ {b:"Huawei",n:"P30 Pro",st:["128", "256", "512"],p:199,step:30,s:S("6,47\" OLED","4200 mAh","40 Mpx quadruple")},
+ {b:"Huawei",n:"P40 Pro",st:["256", "512"],p:279,step:40,s:S("6,58\" OLED 90 Hz","4200 mAh","50 Mpx quadruple")},
+ {b:"OnePlus",n:"Nord CE 3",st:["128", "256"],p:229,step:30,s:S("6,7\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"OnePlus",n:"Nord 3",st:["128", "256"],p:289,step:30,s:S("6,74\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"OnePlus",n:"10 Pro",st:["128", "256"],p:299,step:35,s:S("6,7\" AMOLED 120 Hz","5000 mAh","48 Mpx triple")},
+ {b:"OnePlus",n:"11",st:["128", "256"],p:449,step:50,s:S("6,7\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"OnePlus",n:"12",st:["256", "512"],p:549,step:60,s:S("6,82\" AMOLED 120 Hz","5400 mAh","50 Mpx triple")},
+ {b:"OnePlus",n:"13",st:["256", "512"],p:699,step:60,s:S("6,82\" AMOLED 120 Hz","6000 mAh","50 Mpx triple")},
+ {b:"Oppo",n:"Reno 8",st:["128", "256"],p:249,step:30,s:S("6,4\" AMOLED 90 Hz","4500 mAh","50 Mpx triple")},
+ {b:"Oppo",n:"Reno 10",st:["256"],p:319,step:0,s:S("6,7\" AMOLED 120 Hz","5000 mAh","64 Mpx triple")},
+ {b:"Oppo",n:"Reno 11",st:["256", "512"],p:349,step:40,s:S("6,7\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Oppo",n:"Find X5 Pro",st:["256", "512"],p:449,step:50,s:S("6,7\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Oppo",n:"Find X6 Pro",st:["256", "512"],p:599,step:60,s:S("6,82\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Honor",n:"Magic5 Pro",st:["512"],p:549,step:0,s:S("6,81\" OLED 120 Hz","5100 mAh","50 Mpx triple")},
+ {b:"Honor",n:"Magic6 Pro",st:["512"],p:699,step:0,s:S("6,8\" OLED 120 Hz","5600 mAh","50 Mpx triple")},
+ {b:"Honor",n:"90",st:["256", "512"],p:289,step:40,s:S("6,7\" AMOLED 120 Hz","5000 mAh","200 Mpx triple")},
+ {b:"Honor",n:"200",st:["256", "512"],p:349,step:40,s:S("6,7\" AMOLED 120 Hz","5200 mAh","50 Mpx triple")},
+ {b:"Honor",n:"X8a",st:["128"],p:179,step:0,s:S("6,7\" LCD 90 Hz","4500 mAh","100 Mpx triple")},
+ {b:"Motorola",n:"Moto G54",st:["128", "256"],p:139,step:20,s:S("6,5\" LCD 120 Hz","5000 mAh","50 Mpx double")},
+ {b:"Motorola",n:"Moto G73",st:["128", "256"],p:169,step:20,s:S("6,5\" LCD 120 Hz","5000 mAh","50 Mpx double")},
+ {b:"Motorola",n:"Moto G84",st:["256"],p:189,step:0,s:S("6,5\" OLED 120 Hz","5000 mAh","50 Mpx double")},
+ {b:"Motorola",n:"Edge 40",st:["256"],p:299,step:0,s:S("6,55\" OLED 144 Hz","4400 mAh","50 Mpx double")},
+ {b:"Motorola",n:"Edge 50 Pro",st:["256", "512"],p:329,step:40,s:S("6,7\" OLED 144 Hz","4500 mAh","50 Mpx triple")},
+ {b:"Motorola",n:"Razr 40",st:["256"],p:449,step:0,s:S("6,9\" OLED pliable","4200 mAh","64 Mpx double")},
+ {b:"Nothing",n:"Phone (1)",st:["128", "256"],p:229,step:30,s:S("6,55\" OLED 120 Hz","4500 mAh","50 Mpx double")},
+ {b:"Nothing",n:"Phone (2)",st:["256", "512"],p:349,step:40,s:S("6,7\" OLED 120 Hz","4700 mAh","50 Mpx double")},
+ {b:"Nothing",n:"Phone (2a)",st:["128", "256"],p:229,step:25,s:S("6,7\" AMOLED 120 Hz","5000 mAh","50 Mpx double")},
+ {b:"Nothing",n:"Phone (3a)",st:["128", "256"],p:289,step:30,s:S("6,77\" AMOLED 120 Hz","5000 mAh","50 Mpx triple")},
+ {b:"Realme",n:"11 Pro",st:["256", "512"],p:249,step:30,s:S("6,7\" OLED 120 Hz","5000 mAh","100 Mpx double")},
+ {b:"Realme",n:"12 Pro",st:["256", "512"],p:289,step:30,s:S("6,7\" OLED 120 Hz","5000 mAh","50 Mpx double")},
+ {b:"Realme",n:"C55",st:["128", "256"],p:119,step:20,s:S("6,72\" LCD 90 Hz","5000 mAh","64 Mpx double")},
+ {b:"Sony",n:"Xperia 10 V",st:["128"],p:249,step:0,s:S("6,1\" OLED","5000 mAh","48 Mpx double")},
+ {b:"Sony",n:"Xperia 5 V",st:["128", "256"],p:449,step:50,s:S("6,1\" OLED 120 Hz","5000 mAh","52 Mpx double")},
+ {b:"Sony",n:"Xperia 1 V",st:["256", "512"],p:649,step:60,s:S("6,5\" OLED 120 Hz","5000 mAh","52 Mpx triple")},
 ];
-var STARTER = [3,2,7,9,11,14,5,1]; // index des modèles ajoutés par « modèles de départ »
+var BRANDS=[];MODELS.forEach(function(m){if(BRANDS.indexOf(m.b)<0)BRANDS.push(m.b);});
+var STARTER = ["iPhone 14","iPhone 13","Galaxy S23","Galaxy A54","Redmi Note 12","Pixel 7","iPhone 15 Pro","iPhone 12"]; // modèles ajoutés par « modèles de départ »
 
-var phones=[], requests=[], views=[], q="", qa={b:null,m:null,st:null,si:1,price:""};
+var phones=[], requests=[], views=[], q="", qa={b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2};
 var $=function(s){return document.querySelector(s);};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function eur(n){return n==null?"—":Number(n).toLocaleString("fr-FR")+" €";}
@@ -184,38 +285,46 @@ async function loadAll(){
 
 // ===== Ajout rapide =====
 function chips(items,sel,key){return '<div class="chips">'+items.map(function(x,i){return '<button class="chip" data-'+key+'="'+i+'" aria-pressed="'+(sel===i)+'">'+esc(x)+'</button>';}).join("")+'</div>';}
+function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";}
 function renderQA(){
- var brands=[];MODELS.forEach(function(m){if(brands.indexOf(m.b)<0)brands.push(m.b);});
- var h='<div class="step">1. Marque</div>'+chips(brands,brands.indexOf(qa.b),"b");
- if(qa.b){
-  var ms=MODELS.filter(function(m){return m.b===qa.b;});
-  h+='<div class="step">2. Modèle</div><div class="chips">'+ms.map(function(m){var i=MODELS.indexOf(m);return '<button class="chip" data-m="'+i+'" aria-pressed="'+(qa.m===i)+'">'+esc(m.n)+'</button>';}).join("")+'</div>';
- }
- if(qa.m!=null){
-  var m=MODELS[qa.m];
+ var h='<div class="step">1. Marque</div>'+chips(BRANDS,BRANDS.indexOf(qa.b),"b");
+ if(qa.b){var ms=MODELS.filter(function(m){return m.b===qa.b;});
+  h+='<div class="step">2. Modèle</div><div class="chips">'+ms.map(function(m){var i=MODELS.indexOf(m);return '<button class="chip" data-m="'+i+'" aria-pressed="'+(qa.m===i)+'">'+esc(m.n)+'</button>';}).join("")+'</div>';}
+ if(qa.m!=null){var m=MODELS[qa.m];
   h+='<div class="step">3. Stockage</div>'+chips(m.st,m.st.indexOf(qa.st),"st");
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
-  h+='<div class="step">5. Prix indicatif (modifiable)</div><div class="row" style="margin-bottom:14px"><input id="qaPrice" type="number" min="0" class="price" value="'+qa.price+'"> <span>€</span></div>';
-  h+='<button id="qaAdd">Ajouter à la vitrine</button> ';
- }
+  h+='<div class="step">5. Couleur : '+PAL[qa.co][0]+'</div><div class="sw">'+PAL.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+c[0]+'" title="'+c[0]+'" style="background:'+c[1]+'"></button>';}).join("")+'</div>';
+  h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
+  h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label></div>';
+  h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
  $("#qa").innerHTML=h;
 }
 $("#qa").addEventListener("click",async function(e){
- var c=e.target.closest("[data-b],[data-m],[data-st],[data-si],#qaAdd");if(!c)return;
- if(c.dataset.b!=null){qa={b:["Apple","Samsung","Xiaomi","Google"].filter(function(b){return MODELS.some(function(m){return m.b===b;});})[+c.dataset.b],m:null,st:null,si:1,price:""};}
- else if(c.dataset.m!=null){qa.m=+c.dataset.m;qa.st=MODELS[qa.m].st[0];qa.si=1;qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
- else if(c.dataset.st!=null){qa.st=MODELS[qa.m].st[+c.dataset.st];qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
- else if(c.dataset.si!=null){qa.si=+c.dataset.si;qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
+ var c=e.target.closest("[data-b],[data-m],[data-st],[data-si],[data-co],[data-w],#qaAdd");if(!c)return;
+ var d=c.dataset;
+ if(d.b!=null){qa.b=BRANDS[+d.b];qa.m=null;qa.st=null;}
+ else if(d.m!=null)pick(+d.m);
+ else if(d.st!=null){qa.st=MODELS[qa.m].st[+d.st];qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
+ else if(d.si!=null){qa.si=+d.si;qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
+ else if(d.co!=null)qa.co=+d.co;
+ else if(d.w!=null)qa.w=+d.w;
  else if(c.id==="qaAdd"){
-  var m=MODELS[qa.m],p=$("#qaPrice").value;
-  c.disabled=true;
-  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:BC[m.b]||"#1a63ff",specs:m.s,visible:true});
+  var m=MODELS[qa.m],p=$("#qaPrice").value;c.disabled=true;
+  var sp={"Couleur":PAL[qa.co][0]};for(var k in m.s)sp[k]=m.s[k];
+  if(qa.bat)sp["Batterie"]=qa.bat;sp["Garantie"]=WAR[qa.w];
+  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:PAL[qa.co][1],specs:sp,visible:true});
   if(r.error){toast("Erreur : "+r.error.message);c.disabled=false;return;}
-  toast(m.n+" "+qa.st+" ajouté");qa.m=null;qa.st=null;qa.price="";await loadAll();
+  toast(m.n+" "+qa.st+" "+PAL[qa.co][0].toLowerCase()+" ajouté");await loadAll();
  }
  renderQA();
 });
-$("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;});
+$("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;if(e.target.id==="qaBat")qa.bat=e.target.value;});
+$("#qaSearch").addEventListener("input",function(){
+ var v=this.value.toLowerCase().trim();if(!v){$("#qaRes").innerHTML="";return;}
+ var r=MODELS.map(function(m,i){return {m:m,i:i};}).filter(function(x){return (x.m.b+" "+x.m.n).toLowerCase().indexOf(v)>=0;}).slice(0,14);
+ $("#qaRes").innerHTML='<div class="chips">'+(r.map(function(x){return '<button class="chip" data-pick="'+x.i+'">'+esc(x.m.b+" "+x.m.n)+'</button>';}).join("")||'<span class="meta">Aucun résultat</span>')+'</div>';
+});
+$("#qaRes").addEventListener("click",function(e){var c=e.target.closest("[data-pick]");if(!c)return;pick(+c.dataset.pick);$("#qaSearch").value="";$("#qaRes").innerHTML="";renderQA();});
 
 // ===== Liste =====
 $("#search").addEventListener("input",function(){q=this.value.toLowerCase();renderList();});
@@ -225,22 +334,23 @@ function renderList(){
   $("#list").innerHTML='<div class="card">Aucun téléphone pour le moment.<br><br><button id="starter">Ajouter 8 modèles de départ</button></div>';return;
  }
  $("#list").innerHTML=items.map(function(p){
-  return '<div class="item'+(p.visible?'':' off')+'"><div><b>'+esc(p.brand)+' '+esc(p.name)+'</b> <span class="pill'+(p.visible?'':' off')+'">'+(p.visible?'Visible':'Masqué')+'</span><br><small>'+esc(p.storage)+' · '+esc(p.state)+'</small></div>'+
+  return '<div class="item'+(p.visible?'':' off')+'"><div><span class="dot" style="background:'+esc(p.color||"#888")+'"></span> <b>'+esc(p.brand)+' '+esc(p.name)+'</b> <span class="pill'+(p.visible?'':' off')+'">'+(p.visible?'Visible':'Masqué')+'</span><br><small>'+esc(p.storage)+' · '+esc(p.state)+'</small></div>'+
   '<div class="row"><input class="price" type="number" min="0" value="'+(p.price==null?'':p.price)+'" data-price="'+p.id+'" aria-label="Prix"> €'+
   '<button class="ghost sm" data-act="toggle" data-id="'+p.id+'">'+(p.visible?'Masquer':'Afficher')+'</button>'+
-  '<button class="ghost sm" data-act="edit" data-id="'+p.id+'">Modifier</button>'+
+  '<button class="ghost sm" data-act="dup" data-id="'+p.id+'">Dupliquer</button>'+'<button class="ghost sm" data-act="edit" data-id="'+p.id+'">Modifier</button>'+
   '<button class="danger sm" data-act="del" data-id="'+p.id+'">Supprimer</button></div></div>';
  }).join("")||'<div class="card">Aucun résultat.</div>';
 }
 $("#list").addEventListener("click",async function(e){
  if(e.target.id==="starter"){
-  var rows=STARTER.map(function(i){var m=MODELS[i];return {brand:m.b,name:m.n,storage:m.st[0],state:STATES[1][0],price:suggest(m,m.st[0],1),color:BC[m.b],specs:m.s,visible:true};});
+  var rows=STARTER.map(function(nm){var m=MODELS.filter(function(x){return x.n===nm;})[0];return {brand:m.b,name:m.n,storage:m.st[0],state:STATES[1][0],price:suggest(m,m.st[0],1),color:BC[m.b],specs:m.s,visible:true};});
   var r=await sb.from("phones").insert(rows);if(r.error){toast("Erreur : "+r.error.message);return;}
   toast("Modèles de départ ajoutés");loadAll();return;
  }
  var b=e.target.closest("[data-act]");if(!b)return;
  var id=b.dataset.id,p=phones.filter(function(x){return String(x.id)===id;})[0];if(!p)return;
  if(b.dataset.act==="edit")openForm(p);
+ if(b.dataset.act==="dup"){var cp={brand:p.brand,name:p.name,storage:p.storage,state:p.state,price:p.price,color:p.color,photo_url:p.photo_url,specs:p.specs,visible:p.visible};var rr=await sb.from("phones").insert(cp);toast(rr.error?"Erreur : "+rr.error.message:"Copie ajoutée : cliquez sur Modifier pour changer la couleur ou le stockage");loadAll();}
  if(b.dataset.act==="toggle"){await sb.from("phones").update({visible:!p.visible}).eq("id",id);toast(p.visible?"Masqué":"Affiché");loadAll();}
  if(b.dataset.act==="del"){if(!confirm("Supprimer « "+p.brand+" "+p.name+" » ? Vous pouvez aussi le masquer."))return;await sb.from("phones").delete().eq("id",id);toast("Supprimé");loadAll();}
 });
@@ -258,7 +368,7 @@ function openForm(p){
  $("#pId").value=p?p.id:"";$("#pBrand").value=p?p.brand:"";$("#pName").value=p?p.name:"";
  $("#pStorage").value=p?(p.storage||""):"";$("#pState").value=p?(p.state||""):"";
  $("#pPrice").value=p&&p.price!=null?p.price:"";$("#pPhoto").value=p?(p.photo_url||""):"";
- $("#pVisible").checked=p?p.visible:true;
+ $("#pVisible").checked=p?p.visible:true;$("#pColor").value=p&&p.color&&/^#[0-9a-f]{6}$/i.test(p.color)?p.color:"#15181f";
  $("#pSpecs").value=p&&p.specs?Object.keys(p.specs).map(function(k){return k+": "+p.specs[k];}).join("\n"):"";
  $("#phoneForm").classList.remove("hidden");$("#phoneForm").scrollIntoView({behavior:"smooth"});$("#pBrand").focus();
 }
@@ -267,7 +377,7 @@ $("#pf").addEventListener("submit",async function(e){
  e.preventDefault();
  var pv=$("#pPrice").value,brand=$("#pBrand").value.trim();
  var d={brand:brand,name:$("#pName").value.trim(),storage:$("#pStorage").value.trim()||null,state:$("#pState").value.trim()||null,
-  price:pv===""?null:parseInt(pv,10),color:BC[brand]||"#1a63ff",photo_url:$("#pPhoto").value.trim()||null,specs:parseSpecs($("#pSpecs").value),visible:$("#pVisible").checked};
+  price:pv===""?null:parseInt(pv,10),color:$("#pColor").value,photo_url:$("#pPhoto").value.trim()||null,specs:parseSpecs($("#pSpecs").value),visible:$("#pVisible").checked};
  var id=$("#pId").value;
  var r=id?await sb.from("phones").update(d).eq("id",id):await sb.from("phones").insert(d);
  if(r.error){$("#pErr").textContent="Erreur : "+r.error.message;return;}
