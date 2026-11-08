@@ -73,8 +73,8 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
 .dlg{width:100%;max-width:460px;margin-top:5vh}
 .invwrap{width:100%;max-width:820px}
 #inv{background:#fff;color:#000;padding:32px;border-radius:8px;margin-top:10px;font-size:14px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.inv-h{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:3px solid #1a63ff;padding-bottom:14px;margin-bottom:18px}
-.inv-name{font-size:20px}.inv-t{text-align:right}.inv-t h1{margin:0 0 4px;font-size:28px;color:#1a63ff;font-style:italic}
+.inv-h{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-right:6px;border-bottom:3px solid #1a63ff;padding-bottom:14px;margin-bottom:18px}
+.inv-name{font-size:20px}.inv-t{text-align:left}.inv-t h1{margin:0 0 4px;font-size:30px;line-height:1.1;color:#1a63ff;font-style:normal;letter-spacing:.02em}.inv-s{text-align:left}@media(min-width:620px){.inv-s{text-align:right}}
 .inv-c{margin-bottom:18px;padding:10px 12px;background:#f4f7fc;border-radius:6px}
 #inv [contenteditable]{outline:1px dashed #9aa6b8;min-width:140px;display:inline-block}
 #inv table{width:100%;border-collapse:collapse;border:0;border-radius:0}
@@ -82,7 +82,9 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
 #inv td{border-bottom:1px solid #dbe3ef;padding:10px;font-size:14px}
 .inv-tot{text-align:right;font-size:18px;margin-top:14px}
 .inv-f{margin-top:22px;font-size:12px;color:#444}
-@media print{@page{size:A4;margin:14mm}body>*:not(#invOv){display:none!important}#invOv{position:static;background:none;padding:0;display:block!important}.noprint{display:none!important}#inv{padding:0;margin:0}#inv [contenteditable]{outline:none}}
+#invOv{background:#e9eef6}
+@page{size:A4;margin:0}
+@media print{body>*:not(#invOv){display:none!important}#invOv{position:static;background:none;padding:0;display:block!important}.noprint{display:none!important}#inv{padding:14mm;margin:0;border-radius:0}#inv [contenteditable]{outline:none}}
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
@@ -172,7 +174,7 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
 </div>
 <div id="dlgOv" class="ov hidden"><div class="card dlg" id="dlg"></div></div>
 <div id="invOv" class="ov hidden"><div class="invwrap">
-  <div class="noprint row"><button id="invPrint">Imprimer la facture</button><button class="ghost" id="invClose" style="background:#fff">Fermer</button><small style="color:#fff">Le nom et l’adresse du client sont modifiables avant impression.</small></div>
+  <div class="noprint row"><button id="invPrint">Imprimer la facture</button><button class="ghost" id="invClose" style="background:#fff">Fermer</button><small style="color:var(--mut)">Le nom et l’adresse du client sont modifiables avant impression.</small></div>
   <div id="inv"></div>
 </div></div>
 <div id="toast" role="status"></div>
@@ -778,8 +780,8 @@ function renderLine(){
 $("#chLine").addEventListener("click",function(e){var b=e.target.closest("[data-lm]");if(!b)return;lineMode=b.dataset.lm;renderLine();});
 
 // ===== Factures =====
-var DEF={name:"Phonetek by Hphone",addr:"9 Av. de Montrapon, 25000 Besançon",tel:"07 74 05 62 00",email:"",siret:"",tva:"",vat:"",foot:""}, saleP=null;
-function cfg(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("pt_inv")||"{}"));}catch(e){return Object.assign({},DEF);}}
+var DEF={name:"Phonetek",addr:"9 Av. de Montrapon, 25000 Besançon",tel:"07 74 05 62 00",email:"",siret:"",tva:"",vat:"",foot:""}, saleP=null;
+function cfg(){var o;try{o=Object.assign({},DEF,JSON.parse(localStorage.getItem("pt_inv")||"{}"));}catch(e){o=Object.assign({},DEF);}if(/^Phonetek by Hphone$/i.test(o.name))o.name="Phonetek";return o;}
 function openDlg(h){$("#dlg").innerHTML=h;$("#dlgOv").classList.remove("hidden");}
 function closeDlg(){$("#dlgOv").classList.add("hidden");}
 function fld(l,id,v){return '<label>'+l+'<input id="'+id+'" value="'+esc(v)+'"></label>';}
@@ -844,9 +846,9 @@ async function showInvoice(p){
  var des='<b>'+esc(p.brand+" "+p.name)+'</b>'+(p.storage?' · '+esc(p.storage):'')+(col?' · '+esc(col):'')+
   (p.state?'<br><small>État : '+esc(p.state)+'</small>':'')+(f.imei?'<br><small>IMEI / n° de série : '+esc(f.imei)+'</small>':'')+(gar&&gar!=="Sans garantie"?'<br><small>Garantie : '+esc(gar)+'</small>':'');
  $("#inv").innerHTML=
-  '<div class="inv-h"><div><b class="inv-name">'+esc(c.name)+'</b><br>'+esc(c.addr)+'<br>Tél : '+esc(c.tel)+(c.email?' · '+esc(c.email):'')+
+  '<div class="inv-h"><div class="inv-t"><h1>FACTURE</h1>N° <b>'+esc(f.invoice_no)+'</b><br>Date : '+new Date(f.sold_at).toLocaleDateString("fr-FR")+'</div><div class="inv-s"><b class="inv-name">'+esc(c.name)+'</b><br>'+esc(c.addr)+'<br>Tél : '+esc(c.tel)+(c.email?' · '+esc(c.email):'')+
   (c.siret?'<br>SIRET : '+esc(c.siret):'')+(c.tva?' · N° TVA : '+esc(c.tva):'')+'</div>'+
-  '<div class="inv-t"><h1>FACTURE</h1>N° <b>'+esc(f.invoice_no)+'</b><br>Date : '+new Date(f.sold_at).toLocaleDateString("fr-FR")+'</div></div>'+
+  '</div>'+
   '<div class="inv-c"><small>Client</small><br><b contenteditable="true">'+esc(f.buyer_name||"Client particulier")+'</b><br><span contenteditable="true">'+esc(f.buyer_address||"")+'</span></div>'+
   '<table><thead><tr><th>Désignation</th><th style="width:50px">Qté</th><th style="width:110px;text-align:right">Prix TTC</th></tr></thead><tbody><tr><td>'+des+'</td><td>1</td><td style="text-align:right">'+money(f.sold_price)+'</td></tr></tbody></table>'+
   '<div class="inv-tot">Total à payer : <b>'+money(f.sold_price)+'</b></div>'+
@@ -854,7 +856,7 @@ async function showInvoice(p){
   (c.vat?'<div class="inv-f">'+esc(c.vat)+'</div>':'')+(c.foot?'<div class="inv-f">'+esc(c.foot).replace(/\n/g,'<br>')+'</div>':'');
  $("#invOv").classList.remove("hidden");
 }
-$("#invPrint").addEventListener("click",function(){window.print();});
+$("#invPrint").addEventListener("click",function(){var t=document.title,n=$("#inv .inv-t b");document.title="Facture "+(n?n.textContent:"");window.print();document.title=t;});
 $("#invClose").addEventListener("click",function(){$("#invOv").classList.add("hidden");});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeDlg();$("#invOv").classList.add("hidden");}});
 init();
