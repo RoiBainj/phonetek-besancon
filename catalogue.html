@@ -108,6 +108,10 @@ input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px so
 .chk{display:flex;gap:8px;align-items:start;font-size:13px}.chk input{margin-top:3px}
 .ok{background:color-mix(in srgb,var(--ac) 15%,var(--card));border:1px solid var(--ac);border-radius:8px;padding:12px;margin-top:14px;display:none}
 .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+
+/* Photos produit : même décor que les dessins (dégradé bleu pâle -> blanc), fond blanc des photos rendu transparent */
+.card .pic{background:linear-gradient(180deg,#dbe8fb 0%,#fff 100%)}
+.card .pic img{padding:9%!important;box-sizing:border-box;mix-blend-mode:multiply}
 </style>
 </head>
 <body>
