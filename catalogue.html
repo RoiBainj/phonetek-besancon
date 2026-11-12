@@ -158,20 +158,30 @@ var SB_H = {apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "Content-Type":"appli
 var list = [];
 function sbPost(table,row){try{fetch(SB_URL+"/rest/v1/"+table,{method:"POST",headers:Object.assign({Prefer:"return=minimal"},SB_H),body:JSON.stringify(row),keepalive:true}).catch(function(){});}catch(e){}}
 function track(id,kind){sbPost("views",{phone_id:id,kind:kind});}
+var PALN=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"]];
+function nearestName(hex){if(!hex||!/^#[0-9a-f]{6}$/i.test(hex))return "";var h=[1,3,5].map(function(i){return parseInt(hex.substr(i,2),16);});var best="",bd=1e9;PALN.forEach(function(e){var c=[1,3,5].map(function(i){return parseInt(e[1].substr(i,2),16);});var d=(h[0]-c[0])*(h[0]-c[0])+(h[1]-c[1])*(h[1]-c[1])+(h[2]-c[2])*(h[2]-c[2]);if(d<bd){bd=d;best=e[0];}});return best;}
 async function loadPhones(){
  try{
   var r=await fetch(SB_URL+"/rest/v1/phones?select=*&visible=eq.true&order=created_at.desc",{headers:SB_H});
   if(!r.ok)throw new Error(r.status);
   var rows=await r.json();
-  list=rows.map(function(x){var sp=x.specs||{};return {id:x.id,brand:x.brand||"",name:x.name||"",storage:x.storage||"",state:x.state||"",price:x.price,img:x.photo_url||"",specs:sp,colors:[{n:sp["Couleur"]||"",c:x.color||"#6b7280"}]};});
+  list=rows.map(function(x){var sp=x.specs||{};return {id:x.id,brand:x.brand||"",name:x.name||"",storage:x.storage||"",state:x.state||"",price:x.price,img:x.photo_url||"",bases:(function(){var b=SB_URL+"/storage/v1/object/public/modeles/"+slug(x.name),c=slug(sp["Couleur"]||nearestName(x.color));return c?[b+"-"+c,b]:[b];})(),specs:sp,colors:[{n:sp["Couleur"]||"",c:x.color||"#6b7280"}]};});
  }catch(e){list=[];}
  renderChips();renderGrid();
 }
 var brand = "Tous", lastFocus = null, cur = null, curCol = 0;
 var $ = function(s){return document.querySelector(s);};
 
-function pic(c,img){
- if(img)return '<img src="'+img+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain">';
+var EXTS=[".jpg",".png",".webp"];
+function slug(t){return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
+function picErr(el,c){var bs=(el.dataset.bases||"").split("|").filter(Boolean),cand=[];bs.forEach(function(b){EXTS.forEach(function(e){cand.push(b+e);});});var i=+(el.dataset.i||0)+1;if(i<cand.length){el.dataset.i=i;el.src=cand[i];}else{el.outerHTML=picSvg(c);}}
+function pic(c,img,bases){
+ var st='style="width:100%;height:100%;object-fit:contain" onerror="picErr(this,\''+c+'\')"';
+ if(img)return '<img src="'+img+'" alt="" loading="lazy" '+st+'>';
+ if(bases&&bases.length)return '<img data-bases="'+bases.join("|")+'" data-i="0" src="'+bases[0]+EXTS[0]+'" alt="" loading="lazy" '+st+'>';
+ return picSvg(c);
+}
+function picSvg(c){
  return '<svg viewBox="0 0 90 170" aria-hidden="true"><rect x="5" y="4" width="80" height="162" rx="14" fill="#0b0f16" stroke="'+c+'" stroke-width="4"/><rect x="11" y="14" width="68" height="142" rx="8" fill="'+c+'"/><circle cx="45" cy="24" r="3" fill="#0b0f16"/><rect x="22" y="60" width="46" height="46" rx="10" fill="rgba(255,255,255,.18)"/></svg>';
 }
 function eur(n){return n==null?"Prix sur demande":n.toLocaleString("fr-FR")+" €";}
@@ -185,7 +195,7 @@ function renderGrid(){
  $("#empty").hidden = items.length>0;
  $("#grid").innerHTML = items.map(function(p){
   var dots = p.colors.map(function(c){return '<span class="dot" style="background:'+c.c+'" title="'+c.n+'"></span>';}).join("");
-  return '<button class="card" data-id="'+p.id+'"><div class="pic">'+pic(p.colors[0].c,p.img)+'</div><div class="info"><span class="tag">'+p.state+(p.demo?' · Exemple':'')+'</span><b>'+p.name+'</b><span class="meta">'+p.brand+' · '+p.storage+'</span><div class="dots" aria-label="'+p.colors.length+' couleurs">'+dots+'</div><span class="price">'+eur(p.price)+'</span></div></button>';
+  return '<button class="card" data-id="'+p.id+'"><div class="pic">'+pic(p.colors[0].c,p.img,p.bases)+'</div><div class="info"><span class="tag">'+p.state+(p.demo?' · Exemple':'')+'</span><b>'+p.name+'</b><span class="meta">'+p.brand+' · '+p.storage+'</span><div class="dots" aria-label="'+p.colors.length+' couleurs">'+dots+'</div><span class="price">'+eur(p.price)+'</span></div></button>';
  }).join("");
 }
 $("#chips").addEventListener("click",function(e){var b=e.target.closest("[data-b]");if(!b)return;brand=b.dataset.b;renderChips();renderGrid();});
@@ -193,7 +203,7 @@ $("#grid").addEventListener("click",function(e){var c=e.target.closest("[data-id
 
 function drawColor(){
  var p=cur, col=p.colors[curCol];
- $("#sheetPic").innerHTML=pic(col.c,p.img);
+ $("#sheetPic").innerHTML=pic(col.c,p.img,p.bases);
  $("#colName").textContent=col.n;
  document.querySelectorAll("#sw [data-ci]").forEach(function(b){b.setAttribute("aria-pressed", +b.dataset.ci===curCol);});
  $("#pmsg").value="Bonjour, je suis intéressé(e) par l’"+p.name+" "+p.storage+", couleur "+col.n.toLowerCase()+".";
