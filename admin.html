@@ -85,10 +85,6 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
 #invOv{background:#e9eef6}
 @page{size:A4;margin:0}
 @media print{body>*:not(#invOv){display:none!important}#invOv{position:static;background:none;padding:0;display:block!important}.noprint{display:none!important}#inv{padding:14mm;margin:0;border-radius:0}#inv [contenteditable]{outline:none}}
-.mut{color:var(--mut);font-size:13px}
-.pr{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;margin-bottom:8px}
-.pr .th{width:56px;height:56px;flex:none;border-radius:8px;background:#eef2f9;display:grid;place-items:center;overflow:hidden;font-size:11px;color:var(--mut)}
-.pr .th img{width:100%;height:100%;object-fit:contain}
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
@@ -114,7 +110,6 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
   <button data-tab="requests" aria-current="false">Demandes<span class="badge hidden" id="newBadge"></span></button>
   <button data-tab="stats" aria-current="false">Statistiques</button>
   <button data-tab="compta" aria-current="false">Compta</button>
-  <button data-tab="photos" aria-current="false">Photos</button>
 </nav>
 
 <section id="tab-phones">
@@ -176,15 +171,6 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
   <div class="wx"><table><thead><tr><th>Date</th><th>Téléphone</th><th>Achat</th><th>Vente</th><th>Marge</th></tr></thead><tbody id="cBody"></tbody></table></div>
 </section>
 
-<section id="tab-photos" class="hidden">
-  <h2>Photos des modèles</h2>
-  <div class="card">
-    <p class="mut" style="margin-top:0">Place les photos dans le dossier <b>images</b> du site, nommées d’après le modèle (exemple : <code>iphone-14-pro-max.jpg</code>). Clique sur « Vérifier » pour voir quels modèles ont déjà leur photo.</p>
-    <div class="row"><button id="phRun">Vérifier les photos</button><button class="ghost" id="phCopy">Copier les noms manquants</button><span class="mut" id="phProg"></span></div>
-    <div class="bar" style="margin:12px 0 0"><select id="phB" style="width:auto" aria-label="Marque"></select><select id="phF" style="width:auto" aria-label="Filtre"><option value="all">Tous</option><option value="miss">Manquantes</option><option value="ok">Trouvées</option></select><input id="phQ" type="search" placeholder="Rechercher un modèle…" aria-label="Rechercher"></div>
-  </div>
-  <div id="phList"></div>
-</section>
 </main>
 </div>
 <div id="dlgOv" class="ov hidden"><div class="card dlg" id="dlg"></div></div>
@@ -603,7 +589,7 @@ function showApp(){$("#loginView").classList.add("hidden");$("#appView").classLi
 
 document.querySelectorAll("nav [data-tab]").forEach(function(b){b.addEventListener("click",function(){
  document.querySelectorAll("nav [data-tab]").forEach(function(x){x.setAttribute("aria-current",x===b?"true":"false");});
- ["phones","requests","stats","compta","photos"].forEach(function(t){$("#tab-"+t).classList.toggle("hidden",t!==b.dataset.tab);});
+ ["phones","requests","stats","compta"].forEach(function(t){$("#tab-"+t).classList.toggle("hidden",t!==b.dataset.tab);});
 });});
 
 async function loadAll(){
@@ -984,47 +970,6 @@ $("#invPrint").addEventListener("click",function(){var t=document.title,n=$("#in
 $("#invClose").addEventListener("click",function(){$("#invOv").classList.add("hidden");});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeDlg();$("#invOv").classList.add("hidden");}});
 
-// ===== Vérification des photos =====
-var PH={};
-function slugA(s,sep){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\+/g,"plus").replace(/[()]/g,"").replace(/[^a-z0-9]+/g,sep).replace(new RegExp("^"+sep+"|"+sep+"$","g"),"");}
-function imgUrls(b,n){
- var bases=[slugA(n,"-"),slugA(n,"_"),n,slugA(n," "),slugA(b+" "+n,"-")],seen={},out=[];
- bases.forEach(function(x){if(!seen[x]){seen[x]=1;["jpg","png","webp","jpeg"].forEach(function(e){out.push("images/"+encodeURI(x)+"."+e);});}});
- return out;
-}
-async function findImg(b,n){
- var us=imgUrls(b,n);
- for(var i=0;i<us.length;i++){try{var r=await fetch(us[i],{method:"HEAD"});if(r.ok&&(r.headers.get("content-type")||"").indexOf("image")===0)return us[i];}catch(e){}}
- return false;
-}
-function renderPhotos(){
- var sel=$("#phB");
- if(!sel.options.length)sel.innerHTML='<option value="">Toutes les marques</option>'+BRANDS.map(function(b){return '<option>'+esc(b)+'</option>';}).join("");
- var bf=sel.value,ff=$("#phF").value,q=$("#phQ").value.toLowerCase().trim(),rows=[];
- MODELS.forEach(function(m,i){
-  if(bf&&m.b!==bf)return;
-  if((m.b+" "+m.n).toLowerCase().indexOf(q)<0)return;
-  var st=PH[i];if(ff==="miss"&&st!==false)return;if(ff==="ok"&&!st)return;
-  rows.push('<div class="pr"><div class="th">'+(st?'<img src="'+st+'" alt="">':(st===false?'aucune':'…'))+'</div><div style="flex:1"><b>'+esc(m.b+" "+m.n)+'</b><br><span class="mut">'+(st?'Trouvée : '+esc(decodeURI(st)):(st===false?'Manquante. Nom conseillé : <code>'+esc(slugA(m.n,"-"))+'.jpg</code>':'Non vérifiée'))+'</span></div></div>');
- });
- $("#phList").innerHTML=rows.join("")||'<div class="card">Aucun modèle.</div>';
-}
-async function runPhotos(){
- var idx=MODELS.map(function(_,i){return i;}),done=0,n=idx.length;$("#phRun").disabled=true;
- async function worker(){while(idx.length){var i=idx.shift(),m=MODELS[i];PH[i]=await findImg(m.b,m.n);done++;$("#phProg").textContent="Vérification… "+done+" / "+n;if(done%12===0)renderPhotos();}}
- await Promise.all([1,2,3,4,5,6,7,8].map(worker));
- var ok=Object.keys(PH).filter(function(k){return PH[k];}).length;
- $("#phProg").textContent=ok+" photos trouvées sur "+n+" modèles";$("#phRun").disabled=false;renderPhotos();
-}
-$("#phRun").addEventListener("click",runPhotos);
-["phB","phF"].forEach(function(id){$("#"+id).addEventListener("change",renderPhotos);});
-$("#phQ").addEventListener("input",renderPhotos);
-$("#phCopy").addEventListener("click",async function(){
- var names=MODELS.filter(function(m,i){return PH[i]===false;}).map(function(m){return slugA(m.n,"-")+".jpg";});
- if(!names.length){toast("Lancez d’abord la vérification");return;}
- try{await navigator.clipboard.writeText(names.join("\n"));toast(names.length+" noms copiés");}catch(e){toast("Copie impossible sur ce navigateur");}
-});
-document.querySelector('nav [data-tab="photos"]').addEventListener("click",renderPhotos);
 init();
 </script>
 </body>
