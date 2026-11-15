@@ -187,8 +187,117 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ===== Catalogue de modèles : p = prix indicatif du 1er stockage "comme neuf", step = supplément par stockage =====
 var STATES = [["Comme neuf",1],["Très bon état",.92],["Bon état",.82],["Correct",.7]];
 var BC = {Apple:"#1f2a44",Samsung:"#4b3a6e",Xiaomi:"#8a5a1f",Google:"#3d7a4a"};
-var PAL=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"],["Orange","#d9772b"],["Jaune","#e0b93a"],["Titane naturel","#a79f94"],["Titane désert","#b8a28a"]];
+var PAL=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"],["Orange","#d9772b"],["Jaune","#e0b93a"],["Titane naturel","#a79f94"],["Titane désert","#b8a28a"],["Noir de jais","#0b0c0f"],["Or rose","#e0b4a5"],["Corail","#ef7b6c"],["Lumière stellaire","#e8e3d8"],["Mauve","#b9a6d6"],["Bleu alpin","#8fb3d9"],["Bleu pacifique","#2d5c70"],["Vert nuit","#2f4a3c"],["Vert alpin","#5b7b5a"],["Violet intense","#4e3b63"],["Noir sidéral","#2b2b2e"],["Titane noir","#2c2d30"],["Titane blanc","#e4e2dd"],["Titane bleu","#3f4e63"],["Titane gris","#8a8d93"],["Titane argent","#c9ccd1"],["Titane violet","#8d7fa6"],["Titane jaune","#cbb77a"],["Bleu givré","#bcd3ea"],["Gris clair","#b8bcc2"],["Lavande","#c3b4e0"],["Menthe","#a9d9c4"],["Sarcelle","#6fb0b0"],["Outremer","#5b6fd1"],["Bleu brume","#9fb6c9"],["Blanc nuage","#f0f0ee"],["Or clair","#e3d3a8"],["Bleu ciel","#8ec5e8"],["Bleu profond","#1f3a5c"],["Bordeaux","#6e1f2c"],["Bronze","#8a6a4d"]];
 var WAR=["Sans garantie","3 mois","6 mois","12 mois"];
+// ===== Couleurs disponibles par modèle =====
+var CRULES=`^iPhone 7( Plus)?$=Noir,Noir de jais,Argent,Or,Or rose,Rouge
+^iPhone 8=Gris,Argent,Or,Rouge
+^iPhone X$=Gris,Argent
+^iPhone XR=Noir,Blanc,Bleu,Jaune,Corail,Rouge
+^iPhone XS=Gris,Argent,Or
+^iPhone 11$=Noir,Blanc,Vert,Jaune,Mauve,Rouge
+^iPhone 11 Pro=Gris,Argent,Or,Vert nuit
+^iPhone SE [(]2020=Noir,Blanc,Rouge
+^iPhone SE [(]2022=Bleu nuit,Lumière stellaire,Rouge
+^iPhone 12( mini)?$=Noir,Blanc,Rouge,Vert,Bleu,Mauve
+^iPhone 12 Pro=Gris,Argent,Or,Bleu pacifique
+^iPhone 13( mini)?$=Bleu nuit,Lumière stellaire,Rose,Bleu,Rouge,Vert
+^iPhone 13 Pro=Gris,Or,Argent,Bleu alpin,Vert alpin
+^iPhone 14( Plus)?$=Bleu nuit,Lumière stellaire,Bleu,Mauve,Rouge,Jaune
+^iPhone 14 Pro=Noir sidéral,Argent,Or,Violet intense
+^iPhone 15( Plus)?$=Noir,Bleu,Vert,Jaune,Rose
+^iPhone 15 Pro=Titane naturel,Titane bleu,Titane blanc,Titane noir
+^iPhone 16e=Noir,Blanc
+^iPhone 16( Plus)?$=Noir,Blanc,Rose,Sarcelle,Outremer
+^iPhone 16 Pro=Titane noir,Titane blanc,Titane naturel,Titane désert
+^iPhone 17$=Noir,Blanc,Bleu brume,Vert sauge,Lavande
+^iPhone Air=Noir sidéral,Blanc nuage,Or clair,Bleu ciel
+^iPhone 17 Pro=Orange,Bleu profond,Argent
+^Galaxy S25 Ultra=Titane noir,Titane gris,Titane argent,Titane bleu
+^Galaxy S25 Edge=Titane noir,Titane gris,Titane argent
+^Galaxy S25 FE=Noir,Blanc,Bleu nuit,Bleu givré
+^Galaxy S25[+]?$=Bleu givré,Menthe,Argent,Bleu nuit
+^Galaxy S24 Ultra=Titane noir,Titane gris,Titane violet,Titane jaune
+^Galaxy S24 FE=Noir,Gris clair,Bleu,Menthe,Jaune
+^Galaxy S24[+]?$=Noir,Gris clair,Violet,Jaune
+^Galaxy S23 Ultra=Noir,Crème,Vert,Lavande
+^Galaxy S23 FE=Noir,Crème,Violet,Vert sauge
+^Galaxy S23[+]?$=Noir,Crème,Vert,Lavande
+^Galaxy S22 Ultra=Noir,Blanc,Vert,Bordeaux
+^Galaxy S22[+]?$=Noir,Blanc,Vert,Or rose
+^Galaxy S21 Ultra=Noir,Argent
+^Galaxy S21 FE=Gris,Blanc,Vert,Violet
+^Galaxy S21$=Gris,Violet,Blanc,Rose
+^Galaxy S20 Ultra=Gris,Noir
+^Galaxy S20 FE=Bleu,Lavande,Menthe,Orange,Rouge,Blanc
+^Galaxy S20$=Gris,Bleu,Rose
+^Galaxy S10e=Noir,Blanc,Vert,Jaune
+^Galaxy S10=Noir,Blanc,Vert,Bleu
+^Galaxy S9=Noir,Bleu,Lavande
+^Galaxy Note 20 Ultra=Bronze,Noir,Blanc
+^Galaxy Note 20$=Bronze,Vert,Gris
+^Galaxy Note 10=Argent,Noir,Blanc,Rose,Bleu
+^Galaxy Note 9=Lavande,Bleu,Bronze,Noir
+^Galaxy Z Flip3=Crème,Vert,Lavande,Noir
+^Galaxy Z Flip4=Gris,Or rose,Bleu,Violet
+^Galaxy Z Flip5=Menthe,Lavande,Crème,Gris
+^Galaxy Z Flip6=Argent,Bleu,Jaune,Menthe
+^Galaxy Z Flip7=Bleu nuit,Noir,Corail
+^Galaxy Z Fold3=Noir,Vert,Argent
+^Galaxy Z Fold4=Noir,Vert sauge,Crème
+^Galaxy Z Fold5=Noir,Crème,Bleu givré
+^Galaxy Z Fold6=Argent,Rose,Noir
+^Galaxy Z Fold7=Bleu nuit,Argent,Noir
+^Galaxy A(35|55)$=Bleu givré,Lavande,Bleu nuit,Jaune
+^Galaxy A54=Noir,Blanc,Violet,Vert
+^Galaxy A56=Gris clair,Rose,Vert,Noir
+^Galaxy A53=Noir,Blanc,Bleu,Orange
+^Galaxy A52=Noir,Blanc,Violet,Bleu
+^Galaxy A36=Noir,Lavande,Menthe,Blanc
+^Galaxy A34=Noir,Argent,Vert,Violet
+^Galaxy A33=Noir,Blanc,Bleu,Orange
+^Galaxy A73=Gris,Blanc,Menthe
+^Galaxy A72=Noir,Blanc,Violet,Bleu
+^Galaxy A71=Noir,Argent,Bleu,Rose
+^Galaxy A51=Noir,Blanc,Bleu,Rose
+^Galaxy A26=Noir,Blanc,Menthe,Rose
+^Galaxy A25=Noir,Bleu,Jaune,Bleu givré
+^Galaxy A23=Noir,Blanc,Orange,Bleu
+^Galaxy A22=Noir,Blanc,Menthe,Violet
+^Galaxy A32=Noir,Blanc,Bleu,Violet
+^Galaxy A16=Noir,Vert,Gris clair
+^Galaxy A15=Noir,Bleu,Bleu givré,Jaune
+^Galaxy A14=Noir,Argent,Vert,Rouge
+^Galaxy A13=Noir,Blanc,Bleu,Orange
+^Galaxy A12=Noir,Blanc,Bleu,Rouge
+^Galaxy Xcover=Noir
+^Pixel 4a$=Noir
+^Pixel 5$=Noir,Vert sauge
+^Pixel 5a=Noir
+^Pixel 6a=Blanc,Noir,Vert sauge
+^Pixel 6 Pro=Noir,Blanc,Or
+^Pixel 6$=Noir,Corail,Menthe
+^Pixel 7a=Noir,Blanc,Bleu,Corail
+^Pixel 7 Pro=Noir,Blanc,Vert sauge
+^Pixel 7$=Noir,Blanc,Jaune
+^Pixel 8a=Noir,Blanc,Bleu,Menthe
+^Pixel 8 Pro=Noir,Blanc,Bleu
+^Pixel 8$=Noir,Vert sauge,Rose
+^Pixel 9a=Noir,Blanc,Violet,Rose
+^Pixel 9 Pro Fold=Noir,Blanc
+^Pixel 9 Pro=Noir,Blanc,Vert sauge,Rose
+^Pixel 9$=Noir,Blanc,Menthe,Rose
+^Pixel 10 Pro=Noir,Gris clair,Vert,Blanc
+^Pixel 10$=Noir,Blanc,Bleu nuit,Jaune`.split("\n").map(function(l){var i=l.lastIndexOf("=");return [new RegExp(l.slice(0,i)),l.slice(i+1).split(",")];});
+var BCOL={Apple:"Noir,Blanc,Bleu,Rouge",Samsung:"Noir,Blanc,Bleu,Vert",Google:"Noir,Blanc",Xiaomi:"Noir,Bleu,Vert,Blanc,Violet",Huawei:"Noir,Bleu,Blanc,Or,Violet",OnePlus:"Noir,Vert,Bleu,Gris",Oppo:"Noir,Bleu,Vert,Or",Honor:"Noir,Bleu,Vert,Blanc",Motorola:"Noir,Bleu,Vert,Gris",Nothing:"Noir,Blanc",Realme:"Noir,Bleu,Vert,Or",Sony:"Noir,Blanc,Vert,Violet"};
+function colorsOf(m){
+ if(m.cols)return m.cols;
+ var names=null;for(var i=0;i<CRULES.length;i++){if(CRULES[i][0].test(m.n)){names=CRULES[i][1];break;}}
+ if(!names)names=(BCOL[m.b]||"Noir,Blanc,Bleu").split(",");
+ m.cols=names.map(function(nm){for(var j=0;j<PAL.length;j++){if(PAL[j][0]===nm)return j;}return -1;}).filter(function(j){return j>=0;});
+ if(!m.cols.length)m.cols=[0];
+ return m.cols;
+}
 function S(e,b,c,g){var o={};if(e)o["Écran"]=e;if(b)o["Batterie"]=b;if(c)o["Appareil photo"]=c;o["Garantie"]=g||"6 mois";return o;}
 function serie(m){var n=m.n,b=m.b,x;
  if(b==="Samsung"){x=n.match(/^Galaxy (Note|Xcover|[A-Z])/);return "Galaxy "+(x?x[1]:"");}
@@ -492,7 +601,7 @@ async function loadAll(){
 
 // ===== Ajout rapide =====
 function chips(items,sel,key){return '<div class="chips">'+items.map(function(x,i){return '<button class="chip" data-'+key+'="'+i+'" aria-pressed="'+(sel===i)+'">'+esc(x)+'</button>';}).join("")+'</div>';}
-function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";}
+function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=colorsOf(m)[0];}
 function modelOptions(b){
  var g={};MODELS.forEach(function(m,i){if(m.b===b){(g[m.ser]=g[m.ser]||[]).push({m:m,i:i});}});
  return Object.keys(g).sort(function(a,c){return a.localeCompare(c,"fr");}).map(function(k){
@@ -505,7 +614,7 @@ function renderQA(){
  if(qa.m!=null){var m=MODELS[qa.m];
   h+='<div class="step">3. Stockage</div>'+chips(m.st,m.st.indexOf(qa.st),"st");
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
-  h+='<div class="step">5. Couleur : '+PAL[qa.co][0]+'</div><div class="sw">'+PAL.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+c[0]+'" title="'+c[0]+'" style="background:'+c[1]+'"></button>';}).join("")+'</div>';
+  h+='<div class="step">5. Couleur : '+PAL[qa.co][0]+'</div><div class="sw">'+colorsOf(m).map(function(i){var c=PAL[i];return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+c[0]+'" title="'+c[0]+'" style="background:'+c[1]+'"></button>';}).join("")+'</div>';
   h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
   h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label><label>Prix d’achat (€)<input id="qaBuy" type="number" min="0" step="any" value="'+qa.buy+'"></label></div>';
   h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
