@@ -108,6 +108,16 @@ input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px so
 .chk{display:flex;gap:8px;align-items:start;font-size:13px}.chk input{margin-top:3px}
 .ok{background:color-mix(in srgb,var(--ac) 15%,var(--card));border:1px solid var(--ac);border-radius:8px;padding:12px;margin-top:14px;display:none}
 .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+
+/* Photos produit : même décor que les dessins (dégradé bleu pâle -> blanc), fond blanc des photos rendu transparent */
+.card .pic{background:linear-gradient(180deg,#dbe8fb 0%,#fff 100%)}
+.card .pic img{padding:9%!important;box-sizing:border-box;mix-blend-mode:multiply}
+
+/* Cases homogènes : même hauteur pour photos et dessins */
+.card .pic{position:relative;aspect-ratio:1/1;overflow:hidden}
+.card .pic svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);height:74%;width:auto}
+.card .pic img{position:absolute;inset:0;width:100%;height:100%;padding:6%!important;box-sizing:border-box;object-fit:contain}
+.card{align-self:start}
 </style>
 </head>
 <body>
@@ -152,39 +162,39 @@ input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px so
 <div class="ov" id="ov" role="dialog" aria-modal="true" aria-labelledby="mt"><div class="sheet" id="sheet"></div></div>
 
 <script>
-// ===== Modèles fictifs : mettre SHOW_DEMO à false pour les masquer tous d'un coup =====
-var SHOW_DEMO = true;
-var C = {noir:["Noir","#15181f"],blanc:["Blanc","#f2f2f0"],bleu:["Bleu","#2f5d8a"],vert:["Vert","#3d7a4a"],rose:["Rose","#e7b3c4"],violet:["Violet","#4b3a6e"],rouge:["Rouge","#9b2a33"],or:["Or","#c9a86a"],gris:["Gris sidéral","#6b7280"],titane:["Titane","#8a8f98"],argent:["Argent","#c8ccd2"],jaune:["Jaune","#e0b93a"],vertsauge:["Vert sauge","#8fa58a"],minuit:["Bleu nuit","#1f2a44"]};
-function cols(){var a=[].slice.call(arguments);return a.map(function(k){return {n:C[k][0],c:C[k][1]};});}
-function S(e,b,c){return {"Écran":e,"Batterie":b,"Appareil photo":c,"Garantie":"6 mois"};}
-var RAW = [
- {id:1,brand:"Apple",name:"iPhone 11",storage:"128 Go",state:"Bon état",price:249,colors:cols("noir","blanc","vert","rouge"),specs:S('6,1" LCD',"Santé 85 %","12 Mpx double")},
- {id:2,brand:"Apple",name:"iPhone 12",storage:"128 Go",state:"Très bon état",price:309,colors:cols("noir","blanc","bleu","rouge","vert"),specs:S('6,1" OLED',"Santé 86 %","12 Mpx double")},
- {id:3,brand:"Apple",name:"iPhone 13",storage:"128 Go",state:"Très bon état",price:419,colors:cols("minuit","rose","bleu","vert","blanc"),specs:S('6,1" OLED',"Santé 88 %","12 Mpx double")},
- {id:4,brand:"Apple",name:"iPhone 14",storage:"128 Go",state:"Très bon état",price:529,colors:cols("minuit","violet","bleu","or","rouge"),specs:S('6,1" OLED',"Santé 90 %","12 Mpx double")},
- {id:5,brand:"Apple",name:"iPhone 15",storage:"128 Go",state:"Comme neuf",price:669,colors:cols("noir","rose","bleu","vert","jaune"),specs:S('6,1" OLED 60 Hz',"Santé 93 %","48 Mpx double")},
- {id:6,brand:"Apple",name:"iPhone 15 Pro",storage:"256 Go",state:"Comme neuf",price:849,colors:cols("titane","noir","gris","bleu"),specs:S('6,1" OLED 120 Hz',"Santé 93 %","48 Mpx triple")},
- {id:7,brand:"Samsung",name:"Galaxy S22",storage:"128 Go",state:"Bon état",price:339,colors:cols("noir","blanc","vert","rose"),specs:S('6,1" AMOLED 120 Hz',"3700 mAh","50 Mpx triple")},
- {id:8,brand:"Samsung",name:"Galaxy S23",storage:"256 Go",state:"Très bon état",price:459,colors:cols("noir","vertsauge","blanc","violet"),specs:S('6,1" AMOLED 120 Hz',"3900 mAh","50 Mpx triple")},
- {id:9,brand:"Samsung",name:"Galaxy S24",storage:"256 Go",state:"Comme neuf",price:629,colors:cols("noir","jaune","violet","gris"),specs:S('6,2" AMOLED 120 Hz',"4000 mAh","50 Mpx triple")},
- {id:10,brand:"Samsung",name:"Galaxy A54",storage:"128 Go",state:"Bon état",price:249,colors:cols("noir","blanc","bleu","vert"),specs:S('6,4" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {id:11,brand:"Samsung",name:"Galaxy A35",storage:"128 Go",state:"Très bon état",price:279,colors:cols("noir","bleu","jaune"),specs:S('6,6" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {id:12,brand:"Xiaomi",name:"Redmi Note 12",storage:"128 Go",state:"Bon état",price:169,colors:cols("noir","bleu","blanc"),specs:S('6,67" AMOLED 120 Hz',"5000 mAh","50 Mpx triple")},
- {id:13,brand:"Xiaomi",name:"Redmi Note 13",storage:"256 Go",state:"Comme neuf",price:199,colors:cols("noir","bleu","vert","violet"),specs:S('6,67" AMOLED 120 Hz',"5000 mAh","108 Mpx triple")},
- {id:14,brand:"Xiaomi",name:"Xiaomi 13T",storage:"256 Go",state:"Très bon état",price:339,colors:cols("noir","titane","bleu"),specs:S('6,67" AMOLED 144 Hz',"5000 mAh","50 Mpx triple")},
- {id:15,brand:"Google",name:"Pixel 7",storage:"128 Go",state:"Bon état",price:299,colors:cols("noir","blanc","vert"),specs:S('6,3" OLED 90 Hz',"4355 mAh","50 Mpx double")},
- {id:16,brand:"Google",name:"Pixel 8",storage:"128 Go",state:"Très bon état",price:429,colors:cols("noir","rose","bleu","vertsauge"),specs:S('6,2" OLED 120 Hz',"4575 mAh","50 Mpx double")}
-];
-var PHONES = RAW.map(function(p){p.demo=true;return p;});
-var list = PHONES.filter(function(p){return SHOW_DEMO || !p.demo;});
+// ===== Connexion Supabase (même base que l'admin) : la clé "anon" est publique par conception =====
+var SB_URL = "https://arjhvfbfmlfmzhspyfuw.supabase.co", SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyamh2ZmJmbWxmbXpoc3B5ZnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3MzUyMTYsImV4cCI6MjEwOTMxMTIxNn0.0vefoq_icJ6CnGihMhPtXnO5Hk9H29CTmjt_CtoL1OU";
+var SB_H = {apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "Content-Type":"application/json"};
+var list = [];
+function sbPost(table,row){try{fetch(SB_URL+"/rest/v1/"+table,{method:"POST",headers:Object.assign({Prefer:"return=minimal"},SB_H),body:JSON.stringify(row),keepalive:true}).catch(function(){});}catch(e){}}
+function track(id,kind){sbPost("views",{phone_id:id,kind:kind});}
+var PALN=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"]];
+function nearestName(hex){if(!hex||!/^#[0-9a-f]{6}$/i.test(hex))return "";var h=[1,3,5].map(function(i){return parseInt(hex.substr(i,2),16);});var best="",bd=1e9;PALN.forEach(function(e){var c=[1,3,5].map(function(i){return parseInt(e[1].substr(i,2),16);});var d=(h[0]-c[0])*(h[0]-c[0])+(h[1]-c[1])*(h[1]-c[1])+(h[2]-c[2])*(h[2]-c[2]);if(d<bd){bd=d;best=e[0];}});return best;}
+async function loadPhones(){
+ try{
+  var r=await fetch(SB_URL+"/rest/v1/phones?select=*&visible=eq.true&order=created_at.desc",{headers:SB_H});
+  if(!r.ok)throw new Error(r.status);
+  var rows=await r.json();
+  list=rows.map(function(x){var sp=x.specs||{};return {id:x.id,brand:x.brand||"",name:x.name||"",storage:x.storage||"",state:x.state||"",price:x.price,img:x.photo_url||"",bases:(function(){var b=SB_URL+"/storage/v1/object/public/modeles/"+slug(x.name),c=slug(sp["Couleur"]||nearestName(x.color));return c?[b+"-"+c,b]:[b];})(),specs:sp,colors:[{n:sp["Couleur"]||"",c:x.color||"#6b7280"}]};});
+ }catch(e){list=[];}
+ renderChips();renderGrid();
+}
 var brand = "Tous", lastFocus = null, cur = null, curCol = 0;
 var $ = function(s){return document.querySelector(s);};
 
-function pic(c,img){
- if(img)return '<img src="'+img+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain">';
+var EXTS=[".jpg",".png",".webp"];
+function slug(t){return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
+function picErr(el,c){var bs=(el.dataset.bases||"").split("|").filter(Boolean),cand=[];bs.forEach(function(b){EXTS.forEach(function(e){cand.push(b+e);});});var i=+(el.dataset.i||0)+1;if(i<cand.length){el.dataset.i=i;el.src=cand[i];}else{el.outerHTML=picSvg(c);}}
+function pic(c,img,bases){
+ var st='style="width:100%;height:100%;object-fit:contain" onerror="picErr(this,\''+c+'\')"';
+ if(img)return '<img src="'+img+'" alt="" loading="lazy" '+st+'>';
+ if(bases&&bases.length)return '<img data-bases="'+bases.join("|")+'" data-i="0" src="'+bases[0]+EXTS[0]+'" alt="" loading="lazy" '+st+'>';
+ return picSvg(c);
+}
+function picSvg(c){
  return '<svg viewBox="0 0 90 170" aria-hidden="true"><rect x="5" y="4" width="80" height="162" rx="14" fill="#0b0f16" stroke="'+c+'" stroke-width="4"/><rect x="11" y="14" width="68" height="142" rx="8" fill="'+c+'"/><circle cx="45" cy="24" r="3" fill="#0b0f16"/><rect x="22" y="60" width="46" height="46" rx="10" fill="rgba(255,255,255,.18)"/></svg>';
 }
-function eur(n){return n.toLocaleString("fr-FR")+" €";}
+function eur(n){return n==null?"Prix sur demande":n.toLocaleString("fr-FR")+" €";}
 
 function renderChips(){
  var brands = ["Tous"]; list.forEach(function(p){if(brands.indexOf(p.brand)<0)brands.push(p.brand);});
@@ -195,7 +205,7 @@ function renderGrid(){
  $("#empty").hidden = items.length>0;
  $("#grid").innerHTML = items.map(function(p){
   var dots = p.colors.map(function(c){return '<span class="dot" style="background:'+c.c+'" title="'+c.n+'"></span>';}).join("");
-  return '<button class="card" data-id="'+p.id+'"><div class="pic">'+pic(p.colors[0].c,p.img)+'</div><div class="info"><span class="tag">'+p.state+(p.demo?' · Exemple':'')+'</span><b>'+p.name+'</b><span class="meta">'+p.brand+' · '+p.storage+'</span><div class="dots" aria-label="'+p.colors.length+' couleurs">'+dots+'</div><span class="price">'+eur(p.price)+'</span></div></button>';
+  return '<button class="card" data-id="'+p.id+'"><div class="pic">'+pic(p.colors[0].c,p.img,p.bases)+'</div><div class="info"><span class="tag">'+p.state+(p.demo?' · Exemple':'')+'</span><b>'+p.name+'</b><span class="meta">'+p.brand+' · '+p.storage+'</span><div class="dots" aria-label="'+p.colors.length+' couleurs">'+dots+'</div><span class="price">'+eur(p.price)+'</span></div></button>';
  }).join("");
 }
 $("#chips").addEventListener("click",function(e){var b=e.target.closest("[data-b]");if(!b)return;brand=b.dataset.b;renderChips();renderGrid();});
@@ -203,14 +213,14 @@ $("#grid").addEventListener("click",function(e){var c=e.target.closest("[data-id
 
 function drawColor(){
  var p=cur, col=p.colors[curCol];
- $("#sheetPic").innerHTML=pic(col.c,p.img);
+ $("#sheetPic").innerHTML=pic(col.c,p.img,p.bases);
  $("#colName").textContent=col.n;
  document.querySelectorAll("#sw [data-ci]").forEach(function(b){b.setAttribute("aria-pressed", +b.dataset.ci===curCol);});
  $("#pmsg").value="Bonjour, je suis intéressé(e) par l’"+p.name+" "+p.storage+", couleur "+col.n.toLowerCase()+".";
 }
 function openPhone(id,from){
  var p = list.filter(function(x){return x.id===id;})[0]; if(!p) return;
- cur=p; curCol=0; lastFocus = from;
+ cur=p; curCol=0; lastFocus = from; track(p.id,"vue");
  var specs = '<dt>Marque</dt><dd>'+p.brand+'</dd><dt>Stockage</dt><dd>'+p.storage+'</dd><dt>État</dt><dd>'+p.state+'</dd><dt>Couleur</dt><dd id="colName"></dd>';
  for(var k in p.specs) specs += '<dt>'+k+'</dt><dd>'+p.specs[k]+'</dd>';
  var sw = p.colors.map(function(c,i){return '<button data-ci="'+i+'" aria-pressed="false" aria-label="'+c.n+'" title="'+c.n+'" style="background:'+c.c+'"></button>';}).join("");
@@ -230,17 +240,19 @@ function openPhone(id,from){
  $("#sw").addEventListener("click",function(e){var b=e.target.closest("[data-ci]");if(!b)return;curCol=+b.dataset.ci;drawColor();});
  $("#f").addEventListener("submit",function(e){
   e.preventDefault();
-  var d=new FormData(this),body=d.get("m")+"\n"+d.get("n")+" – "+d.get("c");
+  var d=new FormData(this);sbPost("requests",{phone_id:cur.id,name:d.get("n"),contact:d.get("c"),message:d.get("m")});
+  var body=d.get("m")+"\n"+d.get("n")+" – "+d.get("c");
   location.href="sms:+33774056200?&body="+encodeURIComponent(body);
   this.style.display="none"; $("#ok").style.display="block";
  });
  $("#close").onclick = closeSheet;
+ $("#sheet").querySelector(".acts a").addEventListener("click",function(){track(p.id,"appel");});
 }
 function closeSheet(){$("#ov").classList.remove("on");document.body.style.overflow="";if(lastFocus)lastFocus.focus();}
 $("#ov").addEventListener("click",function(e){if(e.target===this)closeSheet();});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSheet();});
 
-renderChips(); renderGrid();
+renderChips(); renderGrid(); loadPhones();
 </script>
 </body>
 </html>

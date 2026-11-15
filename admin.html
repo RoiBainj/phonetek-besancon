@@ -170,7 +170,6 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
   <div class="row" style="justify-content:space-between;margin:14px 0 8px"><h2 style="margin:0">Ventes</h2><button class="ghost sm" id="csv">Exporter en CSV</button></div>
   <div class="wx"><table><thead><tr><th>Date</th><th>Téléphone</th><th>Achat</th><th>Vente</th><th>Marge</th></tr></thead><tbody id="cBody"></tbody></table></div>
 </section>
-
 </main>
 </div>
 <div id="dlgOv" class="ov hidden"><div class="card dlg" id="dlg"></div></div>
@@ -969,7 +968,6 @@ async function showInvoice(p){
 $("#invPrint").addEventListener("click",function(){var t=document.title,n=$("#inv .inv-t b");document.title="Facture "+(n?n.textContent:"");window.print();document.title=t;});
 $("#invClose").addEventListener("click",function(){$("#invOv").classList.add("hidden");});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){closeDlg();$("#invOv").classList.add("hidden");}});
-
 init();
 </script>
 </body>
