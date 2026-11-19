@@ -229,7 +229,7 @@ var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ===== Catalogue de modèles : p = prix indicatif du 1er stockage "comme neuf", step = supplément par stockage =====
 var STATES = [["Comme neuf",1],["Très bon état",.92],["Bon état",.82],["Correct",.7]];
 var BC = {Apple:"#1f2a44",Samsung:"#4b3a6e",Xiaomi:"#8a5a1f",Google:"#3d7a4a"};
-var PAL=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"],["Orange","#d9772b"],["Jaune","#e0b93a"],["Titane naturel","#a79f94"],["Titane désert","#b8a28a"],["Noir de jais","#0b0c0f"],["Or rose","#e0b4a5"],["Corail","#ef7b6c"],["Lumière stellaire","#e8e3d8"],["Mauve","#b9a6d6"],["Bleu alpin","#8fb3d9"],["Bleu pacifique","#2d5c70"],["Vert nuit","#2f4a3c"],["Vert alpin","#5b7b5a"],["Violet intense","#4e3b63"],["Noir sidéral","#2b2b2e"],["Titane noir","#2c2d30"],["Titane blanc","#e4e2dd"],["Titane bleu","#3f4e63"],["Titane gris","#8a8d93"],["Titane argent","#c9ccd1"],["Titane violet","#8d7fa6"],["Titane jaune","#cbb77a"],["Bleu givré","#bcd3ea"],["Gris clair","#b8bcc2"],["Lavande","#c3b4e0"],["Menthe","#a9d9c4"],["Sarcelle","#6fb0b0"],["Outremer","#5b6fd1"],["Bleu brume","#9fb6c9"],["Blanc nuage","#f0f0ee"],["Or clair","#e3d3a8"],["Bleu ciel","#8ec5e8"],["Bleu profond","#1f3a5c"],["Bordeaux","#6e1f2c"],["Bronze","#8a6a4d"]];
+var PAL=[["Noir","#15181f"],["Blanc","#f2f2f0"],["Gris","#6b7280"],["Argent","#c8ccd2"],["Or","#c9a86a"],["Crème","#efe6d2"],["Bleu","#2f5d8a"],["Bleu nuit","#1f2a44"],["Turquoise","#3fa7a3"],["Vert","#3d7a4a"],["Vert sauge","#8fa58a"],["Rose","#e7b3c4"],["Violet","#4b3a6e"],["Rouge","#9b2a33"],["Orange","#d9772b"],["Jaune","#e0b93a"],["Titane naturel","#a79f94"],["Titane désert","#b8a28a"],["Noir de jais","#0b0c0f"],["Or rose","#e0b4a5"],["Corail","#ef7b6c"],["Lumière stellaire","#e8e3d8"],["Mauve","#b9a6d6"],["Bleu alpin","#8fb3d9"],["Bleu pacifique","#2d5c70"],["Vert nuit","#2f4a3c"],["Vert alpin","#5b7b5a"],["Violet intense","#4e3b63"],["Noir sidéral","#2b2b2e"],["Titane noir","#2c2d30"],["Titane blanc","#e4e2dd"],["Titane bleu","#3f4e63"],["Titane gris","#8a8d93"],["Titane argent","#c9ccd1"],["Titane violet","#8d7fa6"],["Titane jaune","#cbb77a"],["Bleu givré","#bcd3ea"],["Gris clair","#b8bcc2"],["Lavande","#c3b4e0"],["Menthe","#a9d9c4"],["Sarcelle","#6fb0b0"],["Outremer","#5b6fd1"],["Bleu brume","#9fb6c9"],["Blanc nuage","#f0f0ee"],["Or clair","#e3d3a8"],["Bleu ciel","#8ec5e8"],["Bleu profond","#1f3a5c"],["Bordeaux","#6e1f2c"],["Bronze","#8a6a4d"],["Anthracite","#3b3f46"],["Bleu foncé","#1f3a5c"],["Bleu outremer","#5b6fd1"],["Citron vert","#b8d96a"],["Désert","#b8a28a"],["Frost","#dfe9ef"],["Graphite","#4b4f55"],["Gris sidéral","#6a6d73"],["Indigo","#3f4a8a"],["Iris","#8b86c9"],["Jade","#4f9a84"],["Minuit","#1f2430"],["Moonstone","#8d9aa3"],["Naturel","#a79f94"],["Noisette","#9c7b5a"],["Orange cosmique","#d9772b"],["Pivoine","#d96a8f"],["Porcelaine","#e9e4da"],["Sauge","#8fa58a"],["Vert citron","#b8d96a"],["Vert menthe","#a9d9c4"]];
 var WAR=["Sans garantie","3 mois","6 mois","12 mois"];
 // ===== Couleurs disponibles par modèle =====
 var CRULES=`^iPhone 7( Plus)?$=Noir,Noir de jais,Argent,Or,Or rose,Rouge
@@ -377,6 +377,15 @@ async function uploadModelPhoto(file,brand,name,colName){
  var r=await sb.storage.from("modeles").upload(base+".jpg",blob,{contentType:"image/jpeg",upsert:true,cacheControl:"3600"});
  if(r.error)throw r.error;
  if(BUCKET.indexOf(base)<0)BUCKET.push(base);BMAP=null;return base;
+}
+// ===== Contrôle : un téléphone a-t-il une photo trouvable par le catalogue ? (même logique que catalogue.html) =====
+var SYN={gris:["gris-sideral","gris-spatial"],noir:["noir-sideral","noir-spatial","noir-de-jais"],vert:["vert-nuit","vert-sauge","vert-alpin"],bleu:["bleu-nuit","bleu-pacifique","bleu-alpin","bleu-sierra"],violet:["violet-intense","mauve"],mauve:["violet"],argent:["gris-clair"],blanc:["blanc-nuage","lumiere-stellaire"]};
+function hasPhoto(p){
+ if(p.photo_url)return true;if(!BUCKET_OK)return true;
+ var sp=p.specs||{};if(sp["Image"])return BUCKET.indexOf(String(sp["Image"]).replace(/\.(jpe?g|png|webp|avif)$/i,""))>=0;
+ var c=slug(sp["Couleur"]||(nearestPal(p.color)||[""])[0]),n1=slug(p.name),n2=slug((p.brand||"")+" "+p.name),cs=[c].concat(SYN[c]||[]),ok=false;
+ if(c)cs.forEach(function(z){if(BUCKET.indexOf(n1+"-"+z)>=0||BUCKET.indexOf(n2+"-"+z)>=0)ok=true;});
+ return ok||BUCKET.indexOf(n1)>=0||BUCKET.indexOf(n2)>=0;
 }
 function colorsOf(m){
  if(m.cols)return m.cols;
@@ -672,7 +681,7 @@ $("#loginForm").addEventListener("submit",async function(e){
 });
 $("#logout").addEventListener("click",async function(){await sb.auth.signOut();location.reload();});
 async function init(){var s=await sb.auth.getSession();if(s.data.session)showApp();else $("#loginView").classList.remove("hidden");}
-function showApp(){$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");loadBucket().then(function(){renderQA();});renderQA();loadAll();}
+function showApp(){$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");loadBucket().then(function(){renderQA();if(typeof renderList==="function"&&phones.length)renderList();});renderQA();loadAll();}
 
 document.querySelectorAll("nav [data-tab]").forEach(function(b){b.addEventListener("click",function(){
  document.querySelectorAll("nav [data-tab]").forEach(function(x){x.setAttribute("aria-current",x===b?"true":"false");});
@@ -769,6 +778,7 @@ function renderList(){
   var f=fin[p.id]||{},sold=!!f.sold_at,buy=f.purchase_price,sell=sold?f.sold_price:p.price;
   var mg=(buy!=null&&sell!=null)?sell-buy:null;
   var pill=sold?'<span class="pill sold">Vendu</span>':'<span class="pill'+(p.visible?'':' off')+'">'+(p.visible?'Visible':'Masqué')+'</span>';
+  if(!sold&&!hasPhoto(p))pill+=' <span class="pill off" title="Aucune photo trouvée dans le bucket : le catalogue affichera une image générique. Modifiez le téléphone pour envoyer une photo.">⚠ photo manquante</span>';
   var info=esc(p.storage)+' · '+esc(p.state)+(sold?' · vendu '+money(f.sold_price)+' le '+dt(f.sold_at)+(f.invoice_no?' · facture '+esc(f.invoice_no):''):'')+(mg!=null?' · marge <b style="color:'+(mg>=0?'var(--ok)':'var(--red)')+'">'+money(mg)+'</b>':'');
   return '<div class="item'+(sold?' sold':(p.visible?'':' off'))+'"><div><span class="dot" style="background:'+esc(p.color||"#888")+'"></span> <b>'+esc(p.brand)+' '+esc(p.name)+'</b> '+pill+'<br><small>'+info+'</small></div>'+
   '<div class="row">'+(sold?'':'<input class="price" type="number" min="0" value="'+(p.price==null?'':p.price)+'" data-price="'+p.id+'" aria-label="Prix de vente" placeholder="Vente"> €')+
