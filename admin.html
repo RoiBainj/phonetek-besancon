@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Phonetek – Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -88,6 +88,48 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
 .hidden{display:none!important}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0a0f1a;color:#fff;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 #toast.on{opacity:1}
+
+/* ===== Optimisation mobile ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overflow-wrap:break-word;padding-bottom:env(safe-area-inset-bottom,0px)}
+header{padding-top:max(12px,env(safe-area-inset-top,0px));gap:8px;flex-wrap:wrap}
+.ov{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media (max-width:700px){
+header b{font-size:19px}
+header .row{gap:6px}
+main{padding:0 10px 80px}
+nav{flex-wrap:nowrap;overflow-x:auto;margin:10px -10px;padding:2px 10px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;white-space:nowrap;min-height:44px}
+button{min-height:44px}
+button.sm{min-height:40px;padding:8px 12px}
+input,select,textarea{font-size:16px;min-height:46px}
+input[type=checkbox],input[type=radio]{min-height:0;width:auto}
+input[type=color]{padding:2px}
+.card{padding:12px}
+.chip{min-height:44px}
+.sw{gap:12px}.sw button{width:44px;height:44px;min-height:0}
+.bar{flex-direction:column;align-items:stretch}.bar input{min-width:0}
+.item{flex-direction:column;align-items:stretch;gap:10px}
+.item .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.item .row .price{flex:1 1 90px;width:auto;min-width:0}
+.item .row button{flex:1 1 40%}
+.stats{grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{padding:12px}.stat b{font-size:24px}
+.wx{margin:0 -10px;padding:0 10px;-webkit-overflow-scrolling:touch}
+.wx table{min-width:520px}
+th,td{padding:9px 8px}
+.hb{grid-template-columns:minmax(70px,110px) 1fr 70px;gap:8px}
+.donut{gap:12px}
+.ov{padding:0;align-items:stretch}
+.dlg{max-width:none;margin:0;min-height:100%;border-radius:0}
+.invwrap{max-width:none}
+#inv{padding:16px;font-size:13px;overflow-x:auto}
+.inv-h{gap:12px}
+#toast{left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:none;text-align:center}
+.login{margin:6vh auto}
+}
+@media print{.wx table{min-width:0}}
 </style>
 </head>
 <body>
@@ -129,7 +171,7 @@ svg rect.b{transform-box:fill-box;transform-origin:bottom;animation:gy .6s ease-
         <label>Stockage<input id="pStorage" placeholder="128 Go"></label>
         <label>État<input id="pState" placeholder="Très bon état"></label>
         <label>Prix indicatif (€)<input id="pPrice" type="number" min="0"></label>
-        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label><label>Prix d’achat (€)<input id="pBuy" type="number" min="0" step="any"></label>
+        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label><label>Envoyer une photo (JPG, PNG, WebP)<input id="pFile" type="file" accept="image/*"></label><label>Prix d’achat (€)<input id="pBuy" type="number" min="0" step="any"></label>
       </div>
       <label>Caractéristiques (une par ligne : Nom: valeur)<textarea id="pSpecs" rows="4"></textarea></label>
       <label class="row" style="color:var(--tx)"><input id="pVisible" type="checkbox" checked style="width:auto"> Visible sur le site</label>
@@ -320,6 +362,21 @@ function colorOpts(m){
  var i=MODELS.indexOf(m),b=BMAP[i];
  if(b&&b.length)return b;
  return colorsOf(m).map(function(j){return {n:PAL[j][0],c:PAL[j][1],img:null};});
+}
+// ===== Envoi d'une photo dans le bucket "modeles" (converties en JPEG, 1200 px max, fond blanc) =====
+function photoBase(brand,name,colName){return (brand==="Google"?slug(brand+" "+name):slug(name))+"-"+slug(colName);}
+async function toJpeg(file){
+ try{var bmp=await createImageBitmap(file),k=Math.min(1,1200/Math.max(bmp.width,bmp.height)),cv=document.createElement("canvas");
+  cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);var cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(bmp,0,0,cv.width,cv.height);
+  var b=await new Promise(function(ok){cv.toBlob(ok,"image/jpeg",.88);});if(b)return b;}catch(e){console.warn("Conversion impossible :",e);}
+ if(file.type==="image/jpeg")return file;throw new Error("Format d'image non pris en charge (utilisez JPG, PNG ou WebP).");
+}
+async function uploadModelPhoto(file,brand,name,colName){
+ if(file.size>15*1024*1024)throw new Error("Image trop lourde (15 Mo max).");
+ var base=photoBase(brand,name,colName),blob=await toJpeg(file);
+ var r=await sb.storage.from("modeles").upload(base+".jpg",blob,{contentType:"image/jpeg",upsert:true,cacheControl:"3600"});
+ if(r.error)throw r.error;
+ if(BUCKET.indexOf(base)<0)BUCKET.push(base);BMAP=null;return base;
 }
 function colorsOf(m){
  if(m.cols)return m.cols;
@@ -598,7 +655,7 @@ var MODELS = [
 var BRANDS=[];MODELS.forEach(function(m){m.ser=serie(m);if(BRANDS.indexOf(m.b)<0)BRANDS.push(m.b);});BRANDS.sort(function(a,b){return a.localeCompare(b,"fr");});
 var STARTER = ["iPhone 14","iPhone 13","Galaxy S23","Galaxy A54","Redmi Note 12","Pixel 7","iPhone 15 Pro","iPhone 12"]; // modèles ajoutés par « modèles de départ »
 
-var phones=[], requests=[], views=[], fin={}, q="", qa={b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2,buy:""};
+var phones=[], requests=[], views=[], fin={}, q="", qa={file:null,fc:0,b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2,buy:""};
 var $=function(s){return document.querySelector(s);};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function eur(n){return n==null?"—":Number(n).toLocaleString("fr-FR")+" €";}
@@ -632,7 +689,7 @@ async function loadAll(){
 
 // ===== Ajout rapide =====
 function chips(items,sel,key){return '<div class="chips">'+items.map(function(x,i){return '<button class="chip" data-'+key+'="'+i+'" aria-pressed="'+(sel===i)+'">'+esc(x)+'</button>';}).join("")+'</div>';}
-function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=0;}
+function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=0;qa.file=null;qa.fc=0;}
 function modelOptions(b){
  var g={};MODELS.forEach(function(m,i){if(m.b===b){(g[m.ser]=g[m.ser]||[]).push({m:m,i:i});}});
  return Object.keys(g).sort(function(a,c){return a.localeCompare(c,"fr");}).map(function(k){
@@ -647,13 +704,14 @@ function renderQA(){
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
   var co=colorOpts(m);if(qa.co>=co.length)qa.co=0;
   h+='<div class="step">5. Couleur : '+esc(co[qa.co].n)+'</div><div class="sw">'+co.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+esc(c.n)+'" title="'+esc(c.n)+'" style="background:'+c.c+'"></button>';}).join("")+'</div>'+(BUCKET_OK&&!co[0].img?'<div class="meta">Aucune photo de ce modèle dans le bucket « modeles » : le catalogue affichera une image générique.</div>':'');
+  h+='<div class="step">Photo manquante ou nouvelle couleur ?</div><div class="grid2" style="margin:4px 0 12px"><label>Couleur de la photo<select id="qaFc" aria-label="Couleur de la photo">'+PAL.map(function(c,i){return '<option value="'+i+'"'+(qa.fc===i?' selected':'')+'>'+esc(c[0])+'</option>';}).join("")+'</select></label><label>Photo (JPG, PNG, WebP)<input id="qaFile" type="file" accept="image/*"></label></div>'+(qa.file?'<div class="meta" style="margin:-6px 0 12px">Photo choisie : '+esc(qa.file.name)+' → sera enregistrée comme « '+esc(PAL[qa.fc][0])+' » <button class="ghost sm" id="qaFileClear" type="button">Retirer</button></div>':'');
   h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
   h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label><label>Prix d’achat (€)<input id="qaBuy" type="number" min="0" step="any" value="'+qa.buy+'"></label></div>';
   h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
  $("#qa").innerHTML=h;
 }
 $("#qa").addEventListener("click",async function(e){
- var c=e.target.closest("[data-b],[data-m],[data-st],[data-si],[data-co],[data-w],#qaAdd");if(!c)return;
+ var c=e.target.closest("[data-b],[data-m],[data-st],[data-si],[data-co],[data-w],#qaAdd,#qaFileClear");if(!c)return;
  var d=c.dataset;
  if(d.b!=null){qa.b=BRANDS[+d.b];qa.m=null;qa.st=null;}
  else if(d.m!=null)pick(+d.m);
@@ -661,19 +719,25 @@ $("#qa").addEventListener("click",async function(e){
  else if(d.si!=null){qa.si=+d.si;qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
  else if(d.co!=null)qa.co=+d.co;
  else if(d.w!=null)qa.w=+d.w;
+ else if(c.id==="qaFileClear"){qa.file=null;}
  else if(c.id==="qaAdd"){
   var m=MODELS[qa.m],p=$("#qaPrice").value;c.disabled=true;
-  var cc=colorOpts(m)[qa.co],sp={"Couleur":cc.n};if(cc.img)sp["Image"]=cc.img;for(var k in m.s)sp[k]=m.s[k];
+  var cc=colorOpts(m)[qa.co],sp;
+  if(qa.file){try{var fb=await uploadModelPhoto(qa.file,m.b,m.n,PAL[qa.fc][0]);cc={n:PAL[qa.fc][0],c:PAL[qa.fc][1],img:fb};toast("Photo envoyée");}catch(er){toast("Photo non envoyée : "+(er.message||er));c.disabled=false;return;}}
+  sp={"Couleur":cc.n};if(cc.img)sp["Image"]=cc.img;for(var k in m.s)sp[k]=m.s[k];
   if(qa.bat)sp["Batterie"]=qa.bat;sp["Garantie"]=WAR[qa.w];
   var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:cc.c,specs:sp,visible:true}).select("id").single();
   if(r.error){toast("Erreur : "+r.error.message);c.disabled=false;return;}
   if(qa.buy!=="")await saveBuy(r.data.id,qa.buy,m.b+" "+m.n+" "+qa.st);
-  toast(m.n+" "+qa.st+" "+cc.n.toLowerCase()+" ajouté");await loadAll();
+  qa.file=null;toast(m.n+" "+qa.st+" "+cc.n.toLowerCase()+" ajouté");await loadAll();
  }
  renderQA();
 });
 $("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;if(e.target.id==="qaBat")qa.bat=e.target.value;if(e.target.id==="qaBuy")qa.buy=e.target.value;});
-$("#qa").addEventListener("change",function(e){if(e.target.id!=="qaModel")return;if(e.target.value!=="")pick(+e.target.value);else qa.m=null;renderQA();});
+$("#qa").addEventListener("change",function(e){
+ if(e.target.id==="qaFc"){qa.fc=+e.target.value;if(qa.file)renderQA();return;}
+ if(e.target.id==="qaFile"){qa.file=e.target.files[0]||null;if(qa.file){var cur=colorOpts(MODELS[qa.m])[qa.co];for(var j=0;j<PAL.length;j++){if(PAL[j][0]===cur.n){qa.fc=j;break;}}}renderQA();return;}
+ if(e.target.id!=="qaModel")return;if(e.target.value!=="")pick(+e.target.value);else qa.m=null;renderQA();});
 $("#qaSearch").addEventListener("input",function(){
  var v=this.value.toLowerCase().trim();if(!v){$("#qaRes").innerHTML="";return;}
  var r=MODELS.map(function(m,i){return {m:m,i:i};}).filter(function(x){return (x.m.b+" "+x.m.n).toLowerCase().indexOf(v)>=0;}).slice(0,14);
@@ -738,7 +802,7 @@ function openForm(p){
  $("#pStorage").value=p?(p.storage||""):"";$("#pState").value=p?(p.state||""):"";
  $("#pPrice").value=p&&p.price!=null?p.price:"";$("#pPhoto").value=p?(p.photo_url||""):"";
  $("#pVisible").checked=p?p.visible:true;$("#pBuy").value=p&&fin[p.id]&&fin[p.id].purchase_price!=null?fin[p.id].purchase_price:"";$("#pColor").value=p&&p.color&&/^#[0-9a-f]{6}$/i.test(p.color)?p.color:"#15181f";
- $("#pSpecs").value=p&&p.specs?Object.keys(p.specs).map(function(k){return k+": "+p.specs[k];}).join("\n"):"";
+ $("#pFile").value="";$("#pSpecs").value=p&&p.specs?Object.keys(p.specs).map(function(k){return k+": "+p.specs[k];}).join("\n"):"";
  $("#phoneForm").classList.remove("hidden");$("#phoneForm").scrollIntoView({behavior:"smooth"});$("#pBrand").focus();
 }
 function parseSpecs(t){var o={};t.split("\n").forEach(function(l){var i=l.indexOf(":");if(i>0){var k=l.slice(0,i).trim();if(k)o[k]=l.slice(i+1).trim();}});return o;}
@@ -750,6 +814,10 @@ $("#pf").addEventListener("submit",async function(e){
  var id=$("#pId").value;
  var old=id?phones.filter(function(x){return String(x.id)===String(id);})[0]:null;
  if(!d.specs["Couleur"]||(old&&old.color!==d.color&&old.specs&&d.specs["Couleur"]===old.specs["Couleur"])){var np=nearestPal(d.color);if(np)d.specs["Couleur"]=np[0];if(old&&old.specs&&d.specs["Image"]&&d.specs["Image"]===old.specs["Image"]&&old.color!==d.color)delete d.specs["Image"];}
+ var pf=$("#pFile").files[0];
+ if(pf){if(!d.name||!d.brand){$("#pErr").textContent="Renseignez la marque et le modèle avant d'envoyer une photo.";return;}
+  try{var cn=d.specs["Couleur"]||"";if(!cn){var npp=nearestPal(d.color);cn=npp?npp[0]:"Noir";d.specs["Couleur"]=cn;}d.specs["Image"]=await uploadModelPhoto(pf,d.brand,d.name,cn);}
+  catch(er){$("#pErr").textContent="Photo non envoyée : "+(er.message||er);return;}}
  var r=id?await sb.from("phones").update(d).eq("id",id):await sb.from("phones").insert(d).select("id").single();
  if(r.error){$("#pErr").textContent="Erreur : "+r.error.message;return;}
  var bv=$("#pBuy").value,pid=id?+id:r.data.id;await saveBuy(pid,bv,d.brand+" "+d.name+" "+(d.storage||""));
