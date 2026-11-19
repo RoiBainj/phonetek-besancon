@@ -290,6 +290,37 @@ var CRULES=`^iPhone 7( Plus)?$=Noir,Noir de jais,Argent,Or,Or rose,Rouge
 ^Pixel 10 Pro=Noir,Gris clair,Vert,Blanc
 ^Pixel 10$=Noir,Blanc,Bleu nuit,Jaune`.split("\n").map(function(l){var i=l.lastIndexOf("=");return [new RegExp(l.slice(0,i)),l.slice(i+1).split(",")];});
 var BCOL={Apple:"Noir,Blanc,Bleu,Rouge",Samsung:"Noir,Blanc,Bleu,Vert",Google:"Noir,Blanc",Xiaomi:"Noir,Bleu,Vert,Blanc,Violet",Huawei:"Noir,Bleu,Blanc,Or,Violet",OnePlus:"Noir,Vert,Bleu,Gris",Oppo:"Noir,Bleu,Vert,Or",Honor:"Noir,Bleu,Vert,Blanc",Motorola:"Noir,Bleu,Vert,Gris",Nothing:"Noir,Blanc",Realme:"Noir,Bleu,Vert,Or",Sony:"Noir,Blanc,Vert,Violet"};
+// ===== Couleurs issues du bucket Supabase "modeles" (nom de fichier = slug(modèle)-slug(couleur).jpg) =====
+function slug(t){return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
+var BUCKET=[],BUCKET_OK=false,BMAP=null;
+function nearestPal(hex){if(!hex||!/^#[0-9a-f]{6}$/i.test(hex))return null;var h=[1,3,5].map(function(i){return parseInt(hex.substr(i,2),16);}),best=null,bd=1e9;PAL.slice(0,16).forEach(function(e){var c=[1,3,5].map(function(i){return parseInt(e[1].substr(i,2),16);}),d=(h[0]-c[0])*(h[0]-c[0])+(h[1]-c[1])*(h[1]-c[1])+(h[2]-c[2])*(h[2]-c[2]);if(d<bd){bd=d;best=e;}});return best;}
+async function loadBucket(){
+ var all=[],off=0;
+ try{for(;;){var r=await sb.storage.from("modeles").list("",{limit:1000,offset:off,sortBy:{column:"name",order:"asc"}});if(r.error)throw r.error;all=all.concat(r.data||[]);if(!r.data||r.data.length<1000)break;off+=1000;}
+  BUCKET=all.map(function(f){return f.name;}).filter(function(n){return /\.(jpe?g|png|webp|avif)$/i.test(n)&&!/[ ()]/.test(n);}).map(function(n){return n.replace(/\.[^.]+$/,"");});
+  BUCKET_OK=true;}catch(e){console.warn("Bucket modeles illisible :",e);BUCKET_OK=false;}
+ BMAP=null;
+}
+function modelPrefixes(m){var a=slug(m.n),b=slug(m.b+" "+m.n);return a===b?[a]:[a,b];}
+function buildBMap(){
+ BMAP={};var pre=[];
+ MODELS.forEach(function(m,i){modelPrefixes(m).forEach(function(x){pre.push([x,i]);});});
+ pre.sort(function(a,b){return b[0].length-a[0].length;});
+ BUCKET.forEach(function(base){
+  for(var k=0;k<pre.length;k++){var x=pre[k][0];
+   if(base.indexOf(x+"-")===0&&base.length>x.length+1){var cs=base.slice(x.length+1),i=pre[k][1];
+    var pal=null;for(var j=0;j<PAL.length;j++){if(slug(PAL[j][0])===cs){pal=PAL[j];break;}}
+    var label=pal?pal[0]:cs.split("-").map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(" ");
+    (BMAP[i]=BMAP[i]||[]).push({n:label,c:pal?pal[1]:"#6b7280",img:base});break;}}
+ });
+}
+// Options de couleur d'un modèle : d'abord les photos réellement présentes dans le bucket, sinon la palette théorique
+function colorOpts(m){
+ if(!BMAP)buildBMap();
+ var i=MODELS.indexOf(m),b=BMAP[i];
+ if(b&&b.length)return b;
+ return colorsOf(m).map(function(j){return {n:PAL[j][0],c:PAL[j][1],img:null};});
+}
 function colorsOf(m){
  if(m.cols)return m.cols;
  var names=null;for(var i=0;i<CRULES.length;i++){if(CRULES[i][0].test(m.n)){names=CRULES[i][1];break;}}
@@ -584,7 +615,7 @@ $("#loginForm").addEventListener("submit",async function(e){
 });
 $("#logout").addEventListener("click",async function(){await sb.auth.signOut();location.reload();});
 async function init(){var s=await sb.auth.getSession();if(s.data.session)showApp();else $("#loginView").classList.remove("hidden");}
-function showApp(){$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");renderQA();loadAll();}
+function showApp(){$("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden");loadBucket().then(function(){renderQA();});renderQA();loadAll();}
 
 document.querySelectorAll("nav [data-tab]").forEach(function(b){b.addEventListener("click",function(){
  document.querySelectorAll("nav [data-tab]").forEach(function(x){x.setAttribute("aria-current",x===b?"true":"false");});
@@ -601,7 +632,7 @@ async function loadAll(){
 
 // ===== Ajout rapide =====
 function chips(items,sel,key){return '<div class="chips">'+items.map(function(x,i){return '<button class="chip" data-'+key+'="'+i+'" aria-pressed="'+(sel===i)+'">'+esc(x)+'</button>';}).join("")+'</div>';}
-function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=colorsOf(m)[0];}
+function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=0;}
 function modelOptions(b){
  var g={};MODELS.forEach(function(m,i){if(m.b===b){(g[m.ser]=g[m.ser]||[]).push({m:m,i:i});}});
  return Object.keys(g).sort(function(a,c){return a.localeCompare(c,"fr");}).map(function(k){
@@ -614,7 +645,8 @@ function renderQA(){
  if(qa.m!=null){var m=MODELS[qa.m];
   h+='<div class="step">3. Stockage</div>'+chips(m.st,m.st.indexOf(qa.st),"st");
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
-  h+='<div class="step">5. Couleur : '+PAL[qa.co][0]+'</div><div class="sw">'+colorsOf(m).map(function(i){var c=PAL[i];return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+c[0]+'" title="'+c[0]+'" style="background:'+c[1]+'"></button>';}).join("")+'</div>';
+  var co=colorOpts(m);if(qa.co>=co.length)qa.co=0;
+  h+='<div class="step">5. Couleur : '+esc(co[qa.co].n)+'</div><div class="sw">'+co.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+esc(c.n)+'" title="'+esc(c.n)+'" style="background:'+c.c+'"></button>';}).join("")+'</div>'+(BUCKET_OK&&!co[0].img?'<div class="meta">Aucune photo de ce modèle dans le bucket « modeles » : le catalogue affichera une image générique.</div>':'');
   h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
   h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label><label>Prix d’achat (€)<input id="qaBuy" type="number" min="0" step="any" value="'+qa.buy+'"></label></div>';
   h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
@@ -631,12 +663,12 @@ $("#qa").addEventListener("click",async function(e){
  else if(d.w!=null)qa.w=+d.w;
  else if(c.id==="qaAdd"){
   var m=MODELS[qa.m],p=$("#qaPrice").value;c.disabled=true;
-  var sp={"Couleur":PAL[qa.co][0]};for(var k in m.s)sp[k]=m.s[k];
+  var cc=colorOpts(m)[qa.co],sp={"Couleur":cc.n};if(cc.img)sp["Image"]=cc.img;for(var k in m.s)sp[k]=m.s[k];
   if(qa.bat)sp["Batterie"]=qa.bat;sp["Garantie"]=WAR[qa.w];
-  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:PAL[qa.co][1],specs:sp,visible:true}).select("id").single();
+  var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:cc.c,specs:sp,visible:true}).select("id").single();
   if(r.error){toast("Erreur : "+r.error.message);c.disabled=false;return;}
   if(qa.buy!=="")await saveBuy(r.data.id,qa.buy,m.b+" "+m.n+" "+qa.st);
-  toast(m.n+" "+qa.st+" "+PAL[qa.co][0].toLowerCase()+" ajouté");await loadAll();
+  toast(m.n+" "+qa.st+" "+cc.n.toLowerCase()+" ajouté");await loadAll();
  }
  renderQA();
 });
@@ -716,6 +748,8 @@ $("#pf").addEventListener("submit",async function(e){
  var d={brand:brand,name:$("#pName").value.trim(),storage:$("#pStorage").value.trim()||null,state:$("#pState").value.trim()||null,
   price:pv===""?null:parseInt(pv,10),color:$("#pColor").value,photo_url:$("#pPhoto").value.trim()||null,specs:parseSpecs($("#pSpecs").value),visible:$("#pVisible").checked};
  var id=$("#pId").value;
+ var old=id?phones.filter(function(x){return String(x.id)===String(id);})[0]:null;
+ if(!d.specs["Couleur"]||(old&&old.color!==d.color&&old.specs&&d.specs["Couleur"]===old.specs["Couleur"])){var np=nearestPal(d.color);if(np)d.specs["Couleur"]=np[0];if(old&&old.specs&&d.specs["Image"]&&d.specs["Image"]===old.specs["Image"]&&old.color!==d.color)delete d.specs["Image"];}
  var r=id?await sb.from("phones").update(d).eq("id",id):await sb.from("phones").insert(d).select("id").single();
  if(r.error){$("#pErr").textContent="Erreur : "+r.error.message;return;}
  var bv=$("#pBuy").value,pid=id?+id:r.data.id;await saveBuy(pid,bv,d.brand+" "+d.name+" "+(d.storage||""));

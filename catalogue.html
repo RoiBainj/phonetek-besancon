@@ -175,16 +175,20 @@ async function loadPhones(){
   var r=await fetch(SB_URL+"/rest/v1/phones?select=*&visible=eq.true&order=created_at.desc",{headers:SB_H});
   if(!r.ok)throw new Error(r.status);
   var rows=await r.json();
-  list=rows.map(function(x){var sp=x.specs||{};return {id:x.id,brand:x.brand||"",name:x.name||"",storage:x.storage||"",state:x.state||"",price:x.price,img:x.photo_url||"",bases:(function(){var b=SB_URL+"/storage/v1/object/public/modeles/"+slug(x.name),c=slug(sp["Couleur"]||nearestName(x.color));return c?[b+"-"+c,b]:[b];})(),specs:sp,colors:[{n:sp["Couleur"]||"",c:x.color||"#6b7280"}]};});
+  list=rows.map(function(x){var sp=x.specs||{};return {id:x.id,brand:x.brand||"",name:x.name||"",storage:x.storage||"",state:x.state||"",price:x.price,img:x.photo_url||"",bases:(function(){var P=SB_URL+"/storage/v1/object/public/modeles/",o=[],add=function(v){if(v&&o.indexOf(v)<0)o.push(v);};
+   if(sp["Image"])add(P+String(sp["Image"]).replace(/\.(jpe?g|png|webp|avif)$/i,""));
+   var c=slug(sp["Couleur"]||nearestName(x.color)),n1=slug(x.name),n2=slug((x.brand||"")+" "+x.name);
+   if(c){add(P+n1+"-"+c);add(P+n2+"-"+c);}
+   add(P+n1);add(P+n2);return o;})(),specs:sp,colors:[{n:sp["Couleur"]||"",c:x.color||"#6b7280"}]};});
  }catch(e){list=[];}
  renderChips();renderGrid();
 }
 var brand = "Tous", lastFocus = null, cur = null, curCol = 0;
 var $ = function(s){return document.querySelector(s);};
 
-var EXTS=[".jpg",".png",".webp"];
+var EXTS=[".jpg",".jpeg",".png",".webp",".JPG",".PNG"];
 function slug(t){return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
-function picErr(el,c){var bs=(el.dataset.bases||"").split("|").filter(Boolean),cand=[];bs.forEach(function(b){EXTS.forEach(function(e){cand.push(b+e);});});var i=+(el.dataset.i||0)+1;if(i<cand.length){el.dataset.i=i;el.src=cand[i];}else{el.outerHTML=picSvg(c);}}
+function picErr(el,c){var bs=(el.dataset.bases||"").split("|").filter(Boolean),cand=[];bs.forEach(function(b){EXTS.forEach(function(e){cand.push(b+e);});});var i=+(el.dataset.i||0)+1;if(i<cand.length){el.dataset.i=i;el.src=cand[i];}else{console.warn("Photo introuvable, image générique. Essayé :",cand);el.outerHTML=picSvg(c);}}
 function pic(c,img,bases){
  var st='style="width:100%;height:100%;object-fit:contain" onerror="picErr(this,\''+c+'\')"';
  if(img)return '<img src="'+img+'" alt="" loading="lazy" '+st+'>';
