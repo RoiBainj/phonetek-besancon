@@ -171,7 +171,7 @@ th,td{padding:9px 8px}
         <label>Stockage<input id="pStorage" placeholder="128 Go"></label>
         <label>État<input id="pState" placeholder="Très bon état"></label>
         <label>Prix indicatif (€)<input id="pPrice" type="number" min="0"></label>
-        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label><label>Envoyer une photo (JPG, PNG, WebP)<input id="pFile" type="file" accept="image/*"></label><label>Prix d’achat (€)<input id="pBuy" type="number" min="0" step="any"></label>
+        <label>Lien de la photo (facultatif)<input id="pPhoto" type="url" placeholder="https://..."></label><label>Couleur<input id="pColor" type="color" value="#15181f"></label><label>Image choisie (laisser vide = photo du bucket)<input id="pFile" type="file" accept="image/*"></label><label>Prix d’achat (€)<input id="pBuy" type="number" min="0" step="any"></label>
       </div>
       <label>Caractéristiques (une par ligne : Nom: valeur)<textarea id="pSpecs" rows="4"></textarea></label>
       <label class="row" style="color:var(--tx)"><input id="pVisible" type="checkbox" checked style="width:auto"> Visible sur le site</label>
@@ -655,7 +655,7 @@ var MODELS = [
 var BRANDS=[];MODELS.forEach(function(m){m.ser=serie(m);if(BRANDS.indexOf(m.b)<0)BRANDS.push(m.b);});BRANDS.sort(function(a,b){return a.localeCompare(b,"fr");});
 var STARTER = ["iPhone 14","iPhone 13","Galaxy S23","Galaxy A54","Redmi Note 12","Pixel 7","iPhone 15 Pro","iPhone 12"]; // modèles ajoutés par « modèles de départ »
 
-var phones=[], requests=[], views=[], fin={}, q="", qa={file:null,fc:0,b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2,buy:""};
+var phones=[], requests=[], views=[], fin={}, q="", qa={pm:"bucket",file:null,fc:0,b:null,m:null,st:null,si:1,price:"",co:0,bat:"",w:2,buy:""};
 var $=function(s){return document.querySelector(s);};
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 function eur(n){return n==null?"—":Number(n).toLocaleString("fr-FR")+" €";}
@@ -689,7 +689,7 @@ async function loadAll(){
 
 // ===== Ajout rapide =====
 function chips(items,sel,key){return '<div class="chips">'+items.map(function(x,i){return '<button class="chip" data-'+key+'="'+i+'" aria-pressed="'+(sel===i)+'">'+esc(x)+'</button>';}).join("")+'</div>';}
-function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=0;qa.file=null;qa.fc=0;}
+function pick(i){var m=MODELS[i];qa.b=m.b;qa.m=i;qa.st=m.st[0];qa.si=1;qa.price=suggest(m,qa.st,qa.si);qa.bat=m.s["Batterie"]||"";qa.co=0;qa.file=null;qa.fc=0;qa.pm=colorOpts(m)[0].img?"bucket":"file";}
 function modelOptions(b){
  var g={};MODELS.forEach(function(m,i){if(m.b===b){(g[m.ser]=g[m.ser]||[]).push({m:m,i:i});}});
  return Object.keys(g).sort(function(a,c){return a.localeCompare(c,"fr");}).map(function(k){
@@ -704,7 +704,12 @@ function renderQA(){
   h+='<div class="step">4. État</div>'+chips(STATES.map(function(x){return x[0];}),qa.si,"si");
   var co=colorOpts(m);if(qa.co>=co.length)qa.co=0;
   h+='<div class="step">5. Couleur : '+esc(co[qa.co].n)+'</div><div class="sw">'+co.map(function(c,i){return '<button data-co="'+i+'" aria-pressed="'+(qa.co===i)+'" aria-label="'+esc(c.n)+'" title="'+esc(c.n)+'" style="background:'+c.c+'"></button>';}).join("")+'</div>'+(BUCKET_OK&&!co[0].img?'<div class="meta">Aucune photo de ce modèle dans le bucket « modeles » : le catalogue affichera une image générique.</div>':'');
-  h+='<div class="step">Photo manquante ou nouvelle couleur ?</div><div class="grid2" style="margin:4px 0 12px"><label>Couleur de la photo<select id="qaFc" aria-label="Couleur de la photo">'+PAL.map(function(c,i){return '<option value="'+i+'"'+(qa.fc===i?' selected':'')+'>'+esc(c[0])+'</option>';}).join("")+'</select></label><label>Photo (JPG, PNG, WebP)<input id="qaFile" type="file" accept="image/*"></label></div>'+(qa.file?'<div class="meta" style="margin:-6px 0 12px">Photo choisie : '+esc(qa.file.name)+' → sera enregistrée comme « '+esc(PAL[qa.fc][0])+' » <button class="ghost sm" id="qaFileClear" type="button">Retirer</button></div>':'');
+  var cur=co[qa.co];if(!cur.img&&qa.pm==="bucket")qa.pm="file";
+  var rs='width:auto;min-height:0;margin:0 8px 0 0';
+  h+='<div class="step">Photo du téléphone</div><div style="display:grid;gap:8px;margin:4px 0 12px">'
+   +'<label style="display:flex;align-items:center;color:var(--tx);font-size:15px'+(cur.img?'':';opacity:.55')+'"><input type="radio" name="qaPm" value="bucket" style="'+rs+'"'+(qa.pm==="bucket"?' checked':'')+(cur.img?'':' disabled')+'>Utiliser la photo du bucket ('+esc(cur.n)+') '+(cur.img?'✅ trouvée':'❌ aucune pour cette couleur')+'</label>'
+   +'<label style="display:flex;align-items:center;color:var(--tx);font-size:15px"><input type="radio" name="qaPm" value="file" style="'+rs+'"'+(qa.pm==="file"?' checked':'')+'>Utiliser une image que je choisis</label></div>';
+  if(qa.pm==="file"){h+='<div class="grid2" style="margin:0 0 12px"><label>Couleur de cette photo<select id="qaFc" aria-label="Couleur de la photo">'+PAL.map(function(c,i){return '<option value="'+i+'"'+(qa.fc===i?' selected':'')+'>'+esc(c[0])+'</option>';}).join("")+'</select></label><label>Image (JPG, PNG, WebP)<input id="qaFile" type="file" accept="image/*"></label></div>'+(qa.file?'<div class="meta" style="margin:-6px 0 12px">Image choisie : '+esc(qa.file.name)+' → enregistrée dans le bucket comme « '+esc(PAL[qa.fc][0])+' » <button class="ghost sm" id="qaFileClear" type="button">Retirer</button></div>':'<div class="meta" style="margin:-6px 0 12px">Aucune image choisie pour l’instant.</div>');}
   h+='<div class="step">6. Garantie</div>'+chips(WAR,qa.w,"w");
   h+='<div class="grid2" style="margin:6px 0 14px"><label>Batterie<input id="qaBat" value="'+esc(qa.bat)+'"></label><label>Prix indicatif (€)<input id="qaPrice" type="number" min="0" value="'+qa.price+'"></label><label>Prix d’achat (€)<input id="qaBuy" type="number" min="0" step="any" value="'+qa.buy+'"></label></div>';
   h+='<button id="qaAdd">Ajouter à la vitrine</button> ';}
@@ -717,13 +722,14 @@ $("#qa").addEventListener("click",async function(e){
  else if(d.m!=null)pick(+d.m);
  else if(d.st!=null){qa.st=MODELS[qa.m].st[+d.st];qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
  else if(d.si!=null){qa.si=+d.si;qa.price=suggest(MODELS[qa.m],qa.st,qa.si);}
- else if(d.co!=null)qa.co=+d.co;
+ else if(d.co!=null){qa.co=+d.co;if(!colorOpts(MODELS[qa.m])[qa.co].img)qa.pm="file";else if(!qa.file)qa.pm="bucket";}
  else if(d.w!=null)qa.w=+d.w;
  else if(c.id==="qaFileClear"){qa.file=null;}
  else if(c.id==="qaAdd"){
   var m=MODELS[qa.m],p=$("#qaPrice").value;c.disabled=true;
   var cc=colorOpts(m)[qa.co],sp;
-  if(qa.file){try{var fb=await uploadModelPhoto(qa.file,m.b,m.n,PAL[qa.fc][0]);cc={n:PAL[qa.fc][0],c:PAL[qa.fc][1],img:fb};toast("Photo envoyée");}catch(er){toast("Photo non envoyée : "+(er.message||er));c.disabled=false;return;}}
+  if(qa.pm==="file"&&!qa.file){toast("Choisissez une image, ou cochez la photo du bucket");c.disabled=false;return;}
+  if(qa.pm==="file"&&qa.file){try{var fb=await uploadModelPhoto(qa.file,m.b,m.n,PAL[qa.fc][0]);cc={n:PAL[qa.fc][0],c:PAL[qa.fc][1],img:fb};toast("Photo envoyée");}catch(er){toast("Photo non envoyée : "+(er.message||er));c.disabled=false;return;}}
   sp={"Couleur":cc.n};if(cc.img)sp["Image"]=cc.img;for(var k in m.s)sp[k]=m.s[k];
   if(qa.bat)sp["Batterie"]=qa.bat;sp["Garantie"]=WAR[qa.w];
   var r=await sb.from("phones").insert({brand:m.b,name:m.n,storage:qa.st,state:STATES[qa.si][0],price:p===""?null:parseInt(p,10),color:cc.c,specs:sp,visible:true}).select("id").single();
@@ -735,6 +741,7 @@ $("#qa").addEventListener("click",async function(e){
 });
 $("#qa").addEventListener("input",function(e){if(e.target.id==="qaPrice")qa.price=e.target.value;if(e.target.id==="qaBat")qa.bat=e.target.value;if(e.target.id==="qaBuy")qa.buy=e.target.value;});
 $("#qa").addEventListener("change",function(e){
+ if(e.target.name==="qaPm"){qa.pm=e.target.value;renderQA();return;}
  if(e.target.id==="qaFc"){qa.fc=+e.target.value;if(qa.file)renderQA();return;}
  if(e.target.id==="qaFile"){qa.file=e.target.files[0]||null;if(qa.file){var cur=colorOpts(MODELS[qa.m])[qa.co];for(var j=0;j<PAL.length;j++){if(PAL[j][0]===cur.n){qa.fc=j;break;}}}renderQA();return;}
  if(e.target.id!=="qaModel")return;if(e.target.value!=="")pick(+e.target.value);else qa.m=null;renderQA();});
