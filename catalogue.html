@@ -52,9 +52,6 @@ h2{display:inline-block;background:var(--band);color:var(--bandtx);font-size:cla
 .tag{align-self:flex-start;font-size:12px;background:var(--bd);color:var(--mut);padding:1px 8px;border-radius:4px}
 .dots{display:flex;gap:5px;margin-top:4px}
 .dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(128,128,128,.5);display:inline-block}
-.sw{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 4px}
-.sw button{width:36px;height:36px;border-radius:50%;border:2px solid var(--bd);cursor:pointer;padding:0;background:none}
-.sw button[aria-pressed="true"]{border-color:var(--tx);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ac)}
 .empty{color:var(--mut);padding:30px 0}
 .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:10px}
 .how div{border-left:4px solid var(--ac);padding:4px 14px}.how b{display:block;font:800 16px "Montserrat",sans-serif}
@@ -71,7 +68,7 @@ footer.ft{margin-top:40px;border-top:0;background:var(--band);color:#fff;padding
 .ft .note{display:block;color:#9db4d9;font-size:12px}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:40;display:none;align-items:flex-end;justify-content:center}
 .ov.on{display:flex}
-.sheet{background:var(--bg);width:100%;max-width:760px;max-height:92%;overflow:auto;border-radius:14px 14px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));animation:up .25s ease-out}
+.sheet{background:var(--bg);width:100%;max-width:760px;max-height:92%;display:flex;flex-direction:column;overflow:hidden;border-radius:18px 18px 0 0;animation:up .25s ease-out}
 @keyframes up{from{transform:translateY(30px);opacity:0}}
 @media (max-width:600px){
 .wrap{padding-left:12px;padding-right:12px}
@@ -91,23 +88,13 @@ h2{font-size:15px;margin:22px 0 12px;padding:9px 34px}
 .price{font-size:16px}
 .tag{font-size:10px;padding:2px 6px}
 .how{grid-template-columns:1fr;gap:8px}.how div{padding:2px 12px}.how b{font-size:14px}.how span{font-size:13px}
-.sheet{padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px))}
-.dt{gap:10px}.dt .pic{aspect-ratio:16/9}
 }
 @media (min-width:700px){.ov{align-items:center}.sheet{border-radius:14px}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}}
-.top{display:flex;justify-content:space-between;align-items:start;gap:10px}
-.x{background:none;border:2px solid var(--bd);color:var(--tx);border-radius:6px;font-size:20px;width:40px;height:40px;cursor:pointer}
-.dt{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;margin-top:10px}
-@media (max-width:600px){.dt{grid-template-columns:1fr}}
-.dt .pic{border-radius:10px}
-dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}dt{color:var(--mut)}dd{margin:0;font-weight:600}
-form{margin-top:18px;border-top:1px solid var(--bd);padding-top:14px;display:grid;gap:10px}
 label{display:grid;gap:4px;font-size:14px;color:var(--mut)}
 input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:10px}
 .chk{display:flex;gap:8px;align-items:start;font-size:13px}.chk input{margin-top:3px}
 .ok{background:color-mix(in srgb,var(--ac) 15%,var(--card));border:1px solid var(--ac);border-radius:8px;padding:12px;margin-top:14px;display:none}
-.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 
 /* Photos produit : même décor que les dessins (dégradé bleu pâle -> blanc), fond blanc des photos rendu transparent */
 .card .pic{background:linear-gradient(180deg,#dbe8fb 0%,#fff 100%)}
@@ -136,17 +123,54 @@ header .btn span{font-size:13px}
 .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-left:-12px;margin-right:-12px;padding:2px 12px 6px;scroll-snap-type:x proximity}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;min-height:40px;white-space:nowrap;scroll-snap-align:start}
-.sw{gap:12px}.sw button{width:44px;height:44px}
-.x{width:44px;height:44px;flex:0 0 auto}
-.acts{flex-direction:column}.acts .btn,.acts a,.acts button{width:100%}
 input,textarea,select{font-size:16px;min-height:46px}
 .ov{align-items:flex-end}
 .sheet{border-radius:16px 16px 0 0;max-height:94vh;max-height:94dvh}
-dl{grid-template-columns:1fr;gap:0 0}dt{margin-top:8px;font-size:13px}
 .clist li>*{padding:12px 14px}
 .empty{padding:20px 0}
 }
 @media (max-width:360px){.grid{gap:8px}.info b{font-size:12px}.price{font-size:15px}}
+
+/* ===== Fiche produit (modale) : en-tête fixe, contenu qui défile, actions toujours visibles ===== */
+.sh-head{display:flex;align-items:flex-start;gap:12px;padding:16px 16px 12px;background:var(--card);border-bottom:1px solid var(--bd)}
+.sh-ti{flex:1;min-width:0}
+.sh-brand{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.sh-head h3{margin:2px 0 6px;font-size:22px;line-height:1.15}
+.sh-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
+.sh-price .price{font-size:22px}
+.sh-price small{color:var(--mut);font-size:12px;font-weight:600}
+.x{flex:0 0 auto;width:40px;height:40px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:var(--bg);color:var(--tx);font-size:22px;line-height:1;cursor:pointer}
+.sh-body{flex:1;min-height:0;overflow:auto;scroll-padding:12px;overscroll-behavior:contain;padding:14px 16px 16px;display:grid;gap:14px;align-content:start}
+.sh-pic{height:clamp(150px,27vh,230px);height:clamp(150px,27dvh,230px);border-radius:14px;display:grid;grid-template:100%/100%;place-items:center;overflow:hidden;background:linear-gradient(180deg,#dbe8fb 0%,#fff 100%)}
+.sh-pic img{width:100%;height:100%;object-fit:contain;padding:4%;mix-blend-mode:multiply}
+.sh-pic svg{height:78%;width:auto}
+.sh-col{display:flex;align-items:center;gap:10px;margin-top:10px;min-height:32px}
+.sh-col[hidden]{display:none}
+.sh-sw{display:flex;gap:10px}
+.sh-sw button{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd);padding:0;cursor:pointer}
+.sh-sw button[aria-pressed="true"]{border-color:var(--tx);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ac)}
+.sh-dot{width:20px;height:20px;border-radius:50%;border:1px solid rgba(128,128,128,.5)}
+.sh-col b{font-size:14px;font-weight:700}
+.sh-specs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sh-specs li{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;min-width:0}
+.sh-specs small{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--mut)}
+.sh-specs span{display:block;font-weight:700;font-size:14px;line-height:1.3}
+.sh-foot{display:flex;gap:10px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--bd)}
+.sh-foot .btn{flex:1;min-height:48px;padding:12px 10px;font-size:14px}
+.sh-foot .btn.alt{border-color:var(--ac);color:var(--ac)}
+.sh-foot .btn[aria-expanded="true"]{background:color-mix(in srgb,var(--ac) 12%,var(--card))}
+.sh-info{display:grid;gap:14px;align-content:start;min-width:0}
+form{display:grid;gap:10px;padding:14px;background:var(--card);border:1px solid var(--bd);border-radius:14px}
+form[hidden]{display:none}
+.sh-ft{font-weight:800;font-size:15px}
+.chk{font-size:12.5px;line-height:1.4}
+@media (min-width:700px){
+.sh-head{padding:20px 24px 14px}.sh-head h3{font-size:28px}
+.sh-body{grid-template-columns:5fr 6fr;gap:20px;padding:18px 24px 20px;align-items:start}
+.sh-pic{height:280px}
+.sh-foot{padding:12px 24px}
+.sh-foot .btn{flex:0 1 240px}
+}
 </style>
 </head>
 <body>
@@ -249,26 +273,32 @@ function drawColor(){
  var p=cur, col=p.colors[curCol];
  $("#sheetPic").innerHTML=pic(col.c,p.img,p.bases);
  $("#colName").textContent=col.n;
+ $("#shcol").hidden=!(col.n||p.colors.length>1);
+ if($("#dot"))$("#dot").style.background=col.c;
  document.querySelectorAll("#sw [data-ci]").forEach(function(b){b.setAttribute("aria-pressed", +b.dataset.ci===curCol);});
  $("#pmsg").value="Bonjour, je suis intéressé(e) par l’"+p.name+" "+p.storage+", couleur "+col.n.toLowerCase()+".";
 }
 function openPhone(id,from){
  var p = list.filter(function(x){return x.id===id;})[0]; if(!p) return;
  cur=p; curCol=0; lastFocus = from; track(p.id,"vue");
- var specs = '<dt>Marque</dt><dd>'+p.brand+'</dd><dt>Stockage</dt><dd>'+p.storage+'</dd><dt>État</dt><dd>'+p.state+'</dd><dt>Couleur</dt><dd id="colName"></dd>';
- for(var k in p.specs) specs += '<dt>'+k+'</dt><dd>'+p.specs[k]+'</dd>';
- var sw = p.colors.map(function(c,i){return '<button data-ci="'+i+'" aria-pressed="false" aria-label="'+c.n+'" title="'+c.n+'" style="background:'+c.c+'"></button>';}).join("");
+ var rows=[["Stockage",p.storage],["État",p.state]];
+ for(var k in p.specs){if(/^\s*(couleur|image|marque)\s*$/i.test(k))continue;rows.push([k,p.specs[k]]);}
+ var specs=rows.filter(function(r){return r[1];}).map(function(r){return '<li><small>'+r[0]+'</small><span>'+r[1]+'</span></li>';}).join("");
+ var sw = p.colors.length>1 ? p.colors.map(function(c,i){return '<button data-ci="'+i+'" aria-pressed="false" aria-label="'+c.n+'" title="'+c.n+'" style="background:'+c.c+'"></button>';}).join("") : '<span class="sh-dot" id="dot"></span>';
+ var ico='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11 11 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z"/></svg>';
+ var ico2='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></svg>';
  $("#sheet").innerHTML =
- '<div class="top"><div><h3 id="mt" style="font-size:32px;margin:0">'+p.name+'</h3><span class="price">'+eur(p.price)+' <small class="meta">prix indicatif</small></span></div><button class="x" id="close" aria-label="Fermer">×</button></div>'+
- '<div class="dt"><div><div class="pic" id="sheetPic"></div><div class="sw" id="sw">'+sw+'</div></div><dl>'+specs+'</dl></div>'+
- '<div class="acts"><a class="btn" href="tel:+33774056200"><span>Appeler pour ce modèle</span></a></div>'+
- '<form id="f"><b style="font-family:inherit">Ce téléphone vous intéresse ? Écrivez-nous.</b>'+
+ '<div class="sh-head"><div class="sh-ti"><span class="sh-brand">'+p.brand+'</span><h3 id="mt">'+p.name+'</h3><div class="sh-price"><span class="price">'+eur(p.price)+'</span><small>prix indicatif</small></div></div><button class="x" id="close" aria-label="Fermer">×</button></div>'+
+ '<div class="sh-body"><div class="sh-media"><div class="sh-pic" id="sheetPic"></div><div class="sh-col" id="shcol"><div class="sh-sw" id="sw">'+sw+'</div><b id="colName"></b></div></div>'+
+ '<div class="sh-info"><ul class="sh-specs">'+specs+'</ul>'+
+ '<form id="f" hidden><b class="sh-ft">Ce téléphone vous intéresse ?</b>'+
  '<label>Votre nom<input name="n" required autocomplete="name"></label>'+
  '<label>Téléphone ou email<input name="c" required autocomplete="tel"></label>'+
- '<label>Votre message<textarea id="pmsg" name="m" rows="3"></textarea></label>'+
- '<label class="chk"><input type="checkbox" required><span>Je comprends que ce message sera envoyé par SMS à Phonetek, avec le nom et le contact saisis.</span></label>'+
+ '<label>Votre message<textarea id="pmsg" name="m" rows="2"></textarea></label>'+
+ '<label class="chk"><input type="checkbox" required><span>J’accepte que ce message soit envoyé par SMS à Phonetek, avec mon nom et mon contact.</span></label>'+
  '<button class="btn" type="submit"><span>Envoyer par SMS</span></button></form>'+
- '<div class="ok" id="ok" role="status">Votre messagerie s’ouvre avec le message prêt : appuyez sur envoyer. Si rien ne s’ouvre, appelez-nous au 07 74 05 62 00.</div>';
+ '<div class="ok" id="ok" role="status">Votre messagerie s’ouvre avec le message prêt : appuyez sur envoyer. Si rien ne s’ouvre, appelez-nous au 07 74 05 62 00.</div></div></div>'+
+ '<div class="sh-foot"><a class="btn" href="tel:+33774056200">'+ico+'<span>Appeler</span></a><button class="btn alt" type="button" id="msgBtn" aria-expanded="false" aria-controls="f">'+ico2+'<span>Nous écrire</span></button></div>';
  drawColor();
  $("#ov").classList.add("on"); document.body.style.overflow="hidden"; $("#close").focus();
  $("#sw").addEventListener("click",function(e){var b=e.target.closest("[data-ci]");if(!b)return;curCol=+b.dataset.ci;drawColor();});
@@ -277,10 +307,14 @@ function openPhone(id,from){
   var d=new FormData(this);sbPost("requests",{phone_id:cur.id,name:d.get("n"),contact:d.get("c"),message:d.get("m")});
   var body=d.get("m")+"\n"+d.get("n")+" – "+d.get("c");
   location.href="sms:+33774056200?&body="+encodeURIComponent(body);
-  this.style.display="none"; $("#ok").style.display="block";
+  this.hidden=true; $("#msgBtn").setAttribute("aria-expanded","false"); $("#ok").style.display="block"; $("#ok").scrollIntoView({block:"nearest"});
+ });
+ $("#msgBtn").addEventListener("click",function(){
+  var f=$("#f"),open=f.hidden;f.hidden=!open;this.setAttribute("aria-expanded",open);
+  if(open){f.scrollIntoView({block:"start",behavior:"smooth"});f.querySelector("input").focus({preventScroll:true});}
  });
  $("#close").onclick = closeSheet;
- $("#sheet").querySelector(".acts a").addEventListener("click",function(){track(p.id,"appel");});
+ $("#sheet").querySelector(".sh-foot a").addEventListener("click",function(){track(p.id,"appel");});
 }
 function closeSheet(){$("#ov").classList.remove("on");document.body.style.overflow="";if(lastFocus)lastFocus.focus();}
 $("#ov").addEventListener("click",function(e){if(e.target===this)closeSheet();});
