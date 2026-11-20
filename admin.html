@@ -130,6 +130,25 @@ th,td{padding:9px 8px}
 .login{margin:6vh auto}
 }
 @media print{.wx table{min-width:0}}
+
+/* ===== Infobulle des graphiques ===== */
+#ctip{position:fixed;left:0;top:0;z-index:200;display:grid;gap:3px;max-width:min(270px,calc(100vw - 16px));padding:9px 11px;border-radius:10px;background:#0a0f1a;color:#fff;font-size:12.5px;line-height:1.35;box-shadow:0 10px 28px rgba(10,15,26,.3);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s}
+#ctip.on{opacity:1;transform:none}
+#ctip b{font-size:13px;overflow-wrap:anywhere}
+#ctip span{display:flex;align-items:center;gap:7px;color:#cbd5e1}
+#ctip i{flex:0 0 auto;width:9px;height:9px;border-radius:50%}
+#ctip em{margin-left:auto;padding-left:12px;font-style:normal;font-weight:800;color:#fff;white-space:nowrap}
+#ctip .tn{color:#94a3b8;font-size:11.5px}
+.hb{padding:4px 6px;margin:4px -6px;border-radius:8px;cursor:default;outline:none}
+.hb:hover,.hb:focus-visible{background:#eaf1ff}
+.hb:focus-visible{box-shadow:0 0 0 2px var(--ac)}
+.hb:hover .hf,.hb:focus-visible .hf{filter:brightness(1.12)}
+.seg{cursor:pointer;outline:none;transition:stroke-width .15s,opacity .15s}
+.seg:hover,.seg:focus-visible{stroke-width:27}
+.donut svg:has(.seg:hover) .seg:not(:hover),.donut svg:has(.seg:focus-visible) .seg:not(:focus-visible){opacity:.4}
+.hit{cursor:crosshair;touch-action:pan-y}
+.gl,.gd{pointer-events:none}
+@media (prefers-reduced-motion:reduce){#ctip,.seg{transition:none}}
 </style>
 </head>
 <body>
@@ -925,29 +944,55 @@ function brandOf(f){
  var l=f.label||"";for(var i=0;i<BRANDS.length;i++){if(l.indexOf(BRANDS[i]+" ")===0)return BRANDS[i];}return "Autres";
 }
 function short(n){n=Math.round(n);return Math.abs(n)>=1000?(n/1000).toFixed(1).replace(".0","").replace(".",",")+" k":String(n);}
-function hbars(rows,empty){
+// ===== Infobulle des graphiques (souris, toucher, clavier) =====
+var tipEl=document.createElement("div");tipEl.id="ctip";tipEl.setAttribute("role","tooltip");document.body.appendChild(tipEl);
+function tipShow(html,x,y){
+ tipEl.innerHTML=html;tipEl.classList.add("on");
+ var w=tipEl.offsetWidth,h=tipEl.offsetHeight,vw=document.documentElement.clientWidth,vh=window.innerHeight,left=x+14,top=y-h-14;
+ if(left+w>vw-8)left=x-w-14;
+ if(left<8)left=Math.max(8,Math.min(vw-w-8,x-w/2));
+ if(top<8)top=y+20;
+ if(top+h>vh-8)top=Math.max(8,vh-h-8);
+ tipEl.style.left=left+"px";tipEl.style.top=top+"px";
+}
+var tipKb=false;
+function tipHide(){tipEl.classList.remove("on");}
+function tipLines(t){var a=String(t).split("|");return '<b>'+a[0]+'</b>'+a.slice(1).map(function(x){return '<span>'+x+'</span>';}).join("");}
+function tipAttr(a){return esc(a.map(function(x){return String(x).replace(/\|/g,"/");}).join("|"));}
+["#chBrand","#chTop","#chDonut"].forEach(function(sel){
+ var box=$(sel);
+ function on(e){var t=e.target.closest("[data-tip]");if(!t||!box.contains(t)){tipHide();return;}tipShow(tipLines(t.dataset.tip),e.clientX,e.clientY);}
+ box.addEventListener("pointermove",function(e){tipKb=false;on(e);});box.addEventListener("pointerdown",function(e){tipKb=false;on(e);});
+ box.addEventListener("pointerleave",function(e){if(e.pointerType==="mouse")tipHide();});
+ box.addEventListener("focusin",function(e){var t=e.target.closest("[data-tip]");if(!t)return;tipKb=true;var r=t.getBoundingClientRect();tipShow(tipLines(t.dataset.tip),r.left+r.width/2,r.top);});
+ box.addEventListener("focusout",function(){tipKb=false;tipHide();});
+});
+var lineOff=null;
+document.addEventListener("pointerdown",function(e){if(!e.target.closest("#chBrand,#chTop,#chDonut,#chLine svg")){if(lineOff)lineOff();else tipHide();}});
+window.addEventListener("scroll",function(){if(!tipKb)tipHide();},true);
+function hbars(rows,empty,lab){
  if(!rows.length)return '<div class="nodata">'+empty+'</div>';
  var mx=Math.max.apply(null,rows.map(function(r){return Math.abs(r.v);}).concat([1]));
- return rows.map(function(r,i){return '<div class="hb"><span class="hl" title="'+esc(r.l)+'">'+esc(r.l)+'</span><div class="ht"><div class="hf" style="width:'+Math.max(2,Math.abs(r.v)/mx*100)+'%;background:'+(r.v<0?'var(--red)':CCOL[i%CCOL.length])+'"></div></div><b style="color:'+(r.v<0?'var(--red)':'inherit')+'">'+money(r.v)+'</b></div>';}).join("");
+ return rows.map(function(r,i){return '<div class="hb" tabindex="0" data-tip="'+tipAttr([r.l,(lab||"Valeur")+" : "+money(r.v)].concat(r.n!=null?[r.n+" vente"+(r.n>1?"s":"")]:[]))+'"><span class="hl">'+esc(r.l)+'</span><div class="ht"><div class="hf" style="width:'+Math.max(2,Math.abs(r.v)/mx*100)+'%;background:'+(r.v<0?'var(--red)':CCOL[i%CCOL.length])+'"></div></div><b style="color:'+(r.v<0?'var(--red)':'inherit')+'">'+money(r.v)+'</b></div>';}).join("");
 }
 function donut(rows){
  if(!rows.length)return '<div class="nodata">Aucune vente sur cette période.</div>';
  var tot=rows.reduce(function(s,r){return s+r.v;},0),R=54,C=2*Math.PI*R,cum=0,seg="";
- rows.forEach(function(r,i){var len=r.v/tot*C;seg+='<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="'+CCOL[i%CCOL.length]+'" stroke-width="22" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-cum)+'" transform="rotate(-90 70 70)"><title>'+esc(r.l)+' : '+r.v+'</title></circle>';cum+=len;});
+ rows.forEach(function(r,i){var len=r.v/tot*C;seg+='<circle class="seg" tabindex="0" data-tip="'+tipAttr([r.l,r.v+" vendu"+(r.v>1?"s":"")+" · "+Math.round(r.v/tot*100)+" %"])+'" cx="70" cy="70" r="'+R+'" fill="none" stroke="'+CCOL[i%CCOL.length]+'" stroke-width="22" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-cum)+'" transform="rotate(-90 70 70)"></circle>';cum+=len;});
  return '<div class="donut"><svg viewBox="0 0 140 140" width="150" height="150" role="img" aria-label="Ventes par marque">'+seg+'<text x="70" y="68" text-anchor="middle" font-size="26" font-weight="800" fill="#0a0f1a">'+tot+'</text><text x="70" y="86" text-anchor="middle" font-size="11" fill="#566074">vendus</text></svg><ul>'+
   rows.map(function(r,i){return '<li><i style="background:'+CCOL[i%CCOL.length]+'"></i>'+esc(r.l)+' <b>'+r.v+'</b> <span style="color:var(--mut)">('+Math.round(r.v/tot*100)+' %)</span></li>';}).join("")+'</ul></div>';
 }
 function renderCharts(sales,per){
  curPer=per;renderLine();
- var mb={},cb={},mm={};
+ var mb={},cb={},mm={},nb={},nm={};
  sales.forEach(function(f){
   var b=brandOf(f);cb[b]=(cb[b]||0)+1;
-  if(f.purchase_price!=null){var m=(Number(f.sold_price)||0)-Number(f.purchase_price);mb[b]=(mb[b]||0)+m;var l=f.label||"(supprimé)";mm[l]=(mm[l]||0)+m;}
+  if(f.purchase_price!=null){var m=(Number(f.sold_price)||0)-Number(f.purchase_price);mb[b]=(mb[b]||0)+m;nb[b]=(nb[b]||0)+1;var l=f.label||"(supprimé)";mm[l]=(mm[l]||0)+m;nm[l]=(nm[l]||0)+1;}
  });
- var sortR=function(o){return Object.keys(o).map(function(k){return {l:k,v:o[k]};}).sort(function(a,b){return b.v-a.v;});};
- $("#chBrand").innerHTML=hbars(sortR(mb),"Ajoutez des prix d’achat pour voir la marge par marque.");
+ var sortR=function(o,cnt){return Object.keys(o).map(function(k){return {l:k,v:o[k],n:cnt?cnt[k]:null};}).sort(function(a,b){return b.v-a.v;});};
+ $("#chBrand").innerHTML=hbars(sortR(mb,nb),"Ajoutez des prix d’achat pour voir la marge par marque.","Marge");
  $("#chDonut").innerHTML=donut(sortR(cb));
- $("#chTop").innerHTML=hbars(sortR(mm).slice(0,5),"Aucune vente avec prix d’achat sur cette période.");
+ $("#chTop").innerHTML=hbars(sortR(mm,nm).slice(0,5),"Aucune vente avec prix d’achat sur cette période.","Marge");
 }
 
 // ===== Courbes =====
@@ -997,13 +1042,26 @@ function renderLine(){
   });
  }
  vals.forEach(function(v,i){
-  var tip=labs[i]+' : ventes '+money(v.ca)+' · achats '+money(v.co)+' · marge '+money(v.mg)+' · '+v.n+' téléphone(s)';
   if(n<=31||n===1)S.forEach(function(s){g+='<circle cx="'+X(i)+'" cy="'+Y(v[s[0]])+'" r="3.5" fill="#fff" stroke="'+s[2]+'" stroke-width="2"/>';});
-  g+='<circle cx="'+X(i)+'" cy="'+Y(v.ca)+'" r="'+Math.max(6,Math.min(14,iw/n/2))+'" fill="transparent"><title>'+esc(tip)+'</title></circle>';
+
  });
+ g+='<line class="gl" y1="'+T+'" y2="'+(H-B)+'" stroke="#9aa6b8" stroke-dasharray="4 3" style="display:none"/>'+S.map(function(s){return '<circle class="gd" r="5.5" fill="'+s[2]+'" stroke="#fff" stroke-width="2" style="display:none"/>';}).join("")+
+  '<rect class="hit" x="'+L+'" y="'+T+'" width="'+iw+'" height="'+(H-T-B)+'" fill="transparent"/>';
  el.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="chips" style="margin:0"><button class="chip" data-lm="cum" aria-pressed="'+(lineMode==="cum")+'">Cumulé</button><button class="chip" data-lm="per" aria-pressed="'+(lineMode==="per")+'">Par période</button></div>'+
   '<div class="leg" style="margin:0">'+S.map(function(s){return '<span><i style="background:'+s[2]+'"></i>'+s[1]+'</span>';}).join("")+'</div></div>'+
   '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto" role="img" aria-label="Courbes d’évolution">'+g+'</svg>';
+ var sv=el.querySelector("svg"),hit=sv.querySelector(".hit"),gl=sv.querySelector(".gl"),gd=sv.querySelectorAll(".gd");
+ function at(e){
+  var r=sv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,i=n===1?0:Math.max(0,Math.min(n-1,Math.round((x-L)/iw*(n-1)))),v=vals[i];
+  gl.setAttribute("x1",X(i));gl.setAttribute("x2",X(i));gl.style.display="";
+  S.forEach(function(s,k){gd[k].setAttribute("cx",X(i));gd[k].setAttribute("cy",Y(v[s[0]]));gd[k].style.display="";});
+  tipShow('<b>'+esc(labs[i])+(lineMode==="cum"?' · cumulé':'')+'</b>'+S.map(function(s){return '<span><i style="background:'+s[2]+'"></i>'+s[1]+' <em style="color:'+(s[0]==="mg"&&v.mg<0?"#fca5a5":"#fff")+'">'+money(v[s[0]])+'</em></span>';}).join("")+
+   '<span class="tn">'+v.n+' téléphone'+(v.n>1?'s':'')+' vendu'+(v.n>1?'s':'')+(lineMode==="cum"?' au total':'')+'</span>',e.clientX,e.clientY);
+ }
+ function off(){gl.style.display="none";gd.forEach(function(c){c.style.display="none";});tipHide();}
+ hit.addEventListener("pointermove",at);hit.addEventListener("pointerdown",at);
+ hit.addEventListener("pointerleave",function(e){if(e.pointerType==="mouse")off();});
+ lineOff=off;
 }
 $("#chLine").addEventListener("click",function(e){var b=e.target.closest("[data-lm]");if(!b)return;lineMode=b.dataset.lm;renderLine();});
 
